@@ -272,6 +272,7 @@ struct IStorage
                         ,iterator  to
                         ) = 0;
 
+    virtual ~IStorage() {}
 };
 
 // We use one monotonic_buffer_resource per column
@@ -634,6 +635,8 @@ struct IValue
         std::pmr::memory_resource* rsrc
     ) const = 0;
 
+protected:
+    ~IValue() {}
 };
 
 
@@ -645,6 +648,7 @@ private:
     typedef value_ops<T> val_t;
 
     // Convenience
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
     static constexpr value_t* v( T* x ) noexcept
     {
         return reinterpret_cast<value_t*>(x);
@@ -664,7 +668,7 @@ private:
     {
         return reinterpret_cast<const T*>(x);
     }
-
+    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
 public:
     // IValue
@@ -697,6 +701,7 @@ public:
         return &ops;
     }
 
+    virtual ~untyped_value_ops() {}
 };
 
 // FIXME:
