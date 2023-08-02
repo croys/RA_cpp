@@ -43,7 +43,7 @@ constexpr auto operator<=>(const type_t& ta, const type_t& tb)
     return ta.ty_con <=> tb.ty_con;
 }
 
-
+// FIXME: use a static constexpr map of enum -> string_view
 std::ostream& ty_to_stream( std::ostream& os, const type_t& ty )
 {
     switch (ty.ty_con) {
@@ -60,6 +60,8 @@ std::ostream& ty_to_stream( std::ostream& os, const type_t& ty )
     throw std::invalid_argument( "Unrecognised type" );
 }
 
+// FIXME: constexpr
+// FIXME: string view
 std::string ty_to_string( const type_t& ty )
 {
     switch (ty.ty_con) {

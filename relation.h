@@ -17,7 +17,7 @@ namespace rac
 struct value_t{};
 
 
-// Note: we implement as much of the stdlib iteratos as makes sense
+// Note: we implement as much of the stdlib iterators as makes sense
 // As we are abstracting over variable sized storage of unknown type
 // we cannot provide anything where the type leaks
 // - no dereferencing, so std::copy and std::move cannot work with
@@ -700,7 +700,7 @@ struct col_helper
 {
     static void collect_ops( std::vector<IValue*>& ops )
     {
-        ops.push_back( untyped_value_ops<T>::ops() );
+        ops.emplace_back( untyped_value_ops<T>::ops() );
         col_helper<Ts...>::collect_ops(ops);
     }
 
@@ -723,7 +723,7 @@ struct col_helper<T>
 {
     static void collect_ops( std::vector<IValue*>& ops )
     {
-        ops.push_back( untyped_value_ops<T>::ops() );
+        ops.emplace_back( untyped_value_ops<T>::ops() );
     }
 
     static constexpr std::tuple<T> row(
@@ -737,11 +737,12 @@ struct col_helper<T>
 };
 
 template<typename... Ts>
-void collect_ops( std::vector<IValue*>& ops )
+std::vector<IValue*> get_ops()
 {
-    col_helper<Ts...>::collect_ops( ops );
+    std::vector<IValue*> res;
+    col_helper<Ts...>::collect_ops( res );
+    return res;
 }
-
 
 
 std::ostream& cols_to_stream(
@@ -835,7 +836,7 @@ public:
     template<typename Iter>
     explicit relation_builder( std::pmr::memory_resource* rsrc, Iter nb, Iter ne )
     {
-        collect_ops<Types...>(m_ops);
+        m_ops = get_ops<Types...>();
 
         // FIXME: refactor - extract out
         if ( ne - nb != m_ops.size() ) {
@@ -857,7 +858,7 @@ public:
             resource_ptr_t r  =
                 std::make_shared<std::pmr::unsynchronized_pool_resource>( rsrc );
             m_cols.emplace_back( op->make_storage( r.get() ) );
-            m_resources.emplace_back( std::move( r ) );
+            m_resources.emplace_back( r );
         }
     }
 
@@ -939,13 +940,26 @@ public:
 
 
 // relations - monotyped
-struct relation
-{
-
-};
 // - relation columns are unordered
 // - do we want to guarantee ordering of rows on first key?
 // - do keys belong in relation type, or just to relations?
+struct relation
+{
+    typedef std::shared_ptr<std::pmr::memory_resource> resource_ptr_t;
+
+    // construction
+
+    // from components
+
+    // build relation type
+
+    // re-arrange columns
+
+    rel_ty_t                            m_ty;
+    std::vector<IValue*>                m_ops;
+    std::vector<resource_ptr_t>         m_resources;
+    std::vector<IValue::storage_ptr_t>  m_cols;
+};
 
 
 // relation operations

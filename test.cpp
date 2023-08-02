@@ -47,7 +47,7 @@ TEST_CASE( "col_tys_t basics", "[col_tys_t]") {
         ,{ "G", { Date } }, { "H", { Time } }, { "I", { Object } }
         } );
 
-    std::string expected =
+    std::string_view expected =
         "{ A : Void, B : Bool, C : Int, D : Float, E : Double, F : String, "
         "G : Date, H : Time, I : Object }";
 
@@ -153,7 +153,8 @@ TEST_CASE( "relation_builder basics", "[relation_builder]") {
     std::array< std::uint8_t, 32768 > buffer{};
     std::pmr::monotonic_buffer_resource rsrc( buffer.data(), buffer.size() );
 
-    std::vector<std::string> col_names { "A", "B", "C" };
+    //std::vector<std::string> col_names { "A", "B", "C" };
+    std::vector col_names { "A", "B", "C" };
     relation_builder<int, float, double> builder( &rsrc, col_names.begin(), col_names.end() );
 
     col_tys_t expected { { "A", { Int } }, { "B" , { Float } }, { "C", { Double } } };
