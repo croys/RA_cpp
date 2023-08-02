@@ -208,6 +208,9 @@ public:
         return rel_ty_t( std::move( col_tys ) );
     }
 
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-parameter"
+
     // project
     template <typename Iterator>
     static rel_ty_t project( const rel_ty_t& a, Iterator begin, Iterator end )
@@ -222,6 +225,7 @@ public:
         throw not_implemented();
     }
 
+    #pragma GCC diagnostic pop
 
     // intersect
     static rel_ty_t intersect( const rel_ty_t& a, const rel_ty_t& b )

@@ -95,21 +95,23 @@ const_value_iterator operator+(
      const const_value_iterator&            it
     ,const_value_iterator::difference_type  d
 ) noexcept {
-    return const_value_iterator( it.m_ptr + d * it.m_size, it.m_size );
+    return const_value_iterator( it.m_ptr + d * static_cast<long>(it.m_size),
+        it.m_size );
 }
 
 const_value_iterator operator+(
      const_value_iterator::difference_type  d
     ,const const_value_iterator&            it
 ) noexcept {
-    return const_value_iterator( it.m_ptr + d * it.m_size, it.m_size );
+    return const_value_iterator( it.m_ptr + d * static_cast<long>(it.m_size),
+        it.m_size );
 }
 
 const_value_iterator::difference_type operator-(
      const const_value_iterator& a
     ,const const_value_iterator& b
 ) noexcept {
-    return ( a.m_ptr - b.m_ptr ) / a.m_size;
+    return ( a.m_ptr - b.m_ptr ) / static_cast<long>(a.m_size);
 }
 
 
@@ -191,21 +193,23 @@ value_iterator operator+(
      const value_iterator&              it
     ,value_iterator::difference_type    d
 ) noexcept {
-    return value_iterator( it.m_ptr + d * it.m_size, it.m_size );
+    return value_iterator( it.m_ptr + d * static_cast<long>(it.m_size),
+        it.m_size );
 }
 
 value_iterator operator+(
      value_iterator::difference_type    d
     ,const value_iterator&              it
 ) noexcept {
-    return value_iterator( it.m_ptr + d * it.m_size, it.m_size );
+    return value_iterator( it.m_ptr + d * static_cast<long>(it.m_size),
+        it.m_size );
 }
 
 value_iterator::difference_type operator-(
      const value_iterator& a
     ,const value_iterator& b
 ) noexcept {
-    return ( a.m_ptr - b.m_ptr ) / a.m_size;
+    return ( a.m_ptr - b.m_ptr ) / static_cast<long>(a.m_size);
 }
 
 
@@ -235,6 +239,7 @@ struct IStorage
     // immutable access
     virtual const value_t*  at( size_t idx ) const = 0;
     virtual size_t          size() const noexcept = 0;
+    virtual bool            empty() const noexcept = 0;
     virtual const_iterator  cbegin() const noexcept = 0;
     virtual const_iterator  cend() const noexcept = 0;
 
@@ -292,12 +297,12 @@ struct column_storage_base
 
     typedef std::pmr::vector<T> vec_t;
 
-    typedef vec_t::value_type       value_type;
-    typedef vec_t::size_type        size_type;
-    typedef vec_t::const_reference  const_reference;
-    typedef vec_t::reference        reference;
-    typedef vec_t::const_iterator   const_iterator;
-    typedef vec_t::iterator         iterator;
+    typedef typename vec_t::value_type       value_type;
+    typedef typename vec_t::size_type        size_type;
+    typedef typename vec_t::const_reference  const_reference;
+    typedef typename vec_t::reference        reference;
+    typedef typename vec_t::const_iterator   const_iterator;
+    typedef typename vec_t::iterator         iterator;
 
     //typedef std::shared_ptr<std::pmr::memory_resource> resource_ptr_t;
     typedef std::pmr::memory_resource* resource_ptr_t;
@@ -407,6 +412,8 @@ struct column_storage : public column_storage_base< T >
         : column_storage_base< T >( rsrc )
     {
     }
+
+    virtual ~column_storage() {}
 };
 
 
@@ -421,9 +428,12 @@ struct untyped_column_storage : public IStorage
     {
     }
 
+    virtual ~untyped_column_storage() {}
+
 private:
 
     // Convenience
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
     static constexpr value_t* v( T* x ) noexcept
     {
         return reinterpret_cast<value_t*>(x);
@@ -443,6 +453,7 @@ private:
     {
         return reinterpret_cast<const T*>(x);
     }
+    // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
 public:
 
@@ -456,6 +467,11 @@ public:
     size_t size() const noexcept override
     {
         return m_storage->size();
+    }
+
+    bool empty() const noexcept override
+    {
+        return m_storage->empty();
     }
 
     const_iterator cbegin() const noexcept override
@@ -545,7 +561,7 @@ struct value_ops_base
 {
     typedef std::shared_ptr<IStorage> storage_ptr_t;
 
-    static constexpr storage_ptr_t make_storage( std::pmr::memory_resource* rsrc )
+    static storage_ptr_t make_storage( std::pmr::memory_resource* rsrc )
     {
         // FIXME: use another memory resource for the objects themselves
         auto s = std::make_shared< column_storage< T > >( rsrc );
@@ -614,7 +630,7 @@ struct IValue
     // really belongs in IColumn/IColumnBuilder/etc...
     typedef std::shared_ptr<IStorage> storage_ptr_t;
 
-    virtual constexpr storage_ptr_t make_storage(
+    virtual storage_ptr_t make_storage(
         std::pmr::memory_resource* rsrc
     ) const = 0;
 
@@ -665,7 +681,7 @@ public:
         return os << *ct( v );
     }
 
-    constexpr storage_ptr_t make_storage(
+    storage_ptr_t make_storage(
         std::pmr::memory_resource* rsrc
     ) const override
     {
@@ -780,7 +796,7 @@ std::ostream& cols_to_stream(
             total_width += 2;
         }
         ss.str("");
-        ss.width( m );
+        ss.width( static_cast<long>(m) );
         ss << col_tys[ c ].first;
         ss.width( 0 );
         os << ss.str();
@@ -804,7 +820,7 @@ std::ostream& cols_to_stream(
                 os << "  ";
             }
             ss.str("");
-            ss.width( col_sizes[ c ] );
+            ss.width( static_cast<long>(col_sizes[ c ]) );
             ops[ c ]->to_stream( cols[ c ]->at( r ), ss );
             ss.width(0);
             os << ss.str();
@@ -839,7 +855,7 @@ public:
         m_ops = get_ops<Types...>();
 
         // FIXME: refactor - extract out
-        if ( ne - nb != m_ops.size() ) {
+        if ( size_t(ne - nb) != m_ops.size() ) {
             throw_with< std::invalid_argument >(
                 std::ostringstream()
                 << "Size of column names and types do not match, "

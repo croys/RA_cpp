@@ -23,8 +23,10 @@ CheckOptions:
     value: 'x|y|z'
   - key: readability-identifier-length.IgnoredParameterNames
     value: 'x|y|z'
-
-
+  - key: readability-identifier-length.MinimumParameterNameLength
+    value: '0'
+  - key: readability-identifier-length.MinimumVariableNameLength
+    value: '0'
 
 
 

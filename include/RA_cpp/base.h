@@ -21,8 +21,9 @@ struct not_implemented : public std::logic_error
 };
 
 template<typename T, typename U>
-void throw_with( U& s )
+void throw_with( U s )
 {
+    // FIXME: do this statically
     std::ostringstream* ss = dynamic_cast<std::ostringstream*>(&s);
     if (ss) {
         throw T( ss->str() );
