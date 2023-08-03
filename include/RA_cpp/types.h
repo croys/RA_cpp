@@ -206,9 +206,13 @@ public:
         // Note: col_tys is sorted by construction
         return rel_ty_t( std::move( col_tys ) );
     }
-
+#ifdef _MSC_VER
+    #pragma warning(push)
+    #pragma warning(disable:4100)
+#else
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
 
     // project
     template <typename Iterator>
@@ -224,7 +228,11 @@ public:
         throw not_implemented();
     }
 
+#ifdef _MSC_VER
+    #pragma warning(pop)
+#else
     #pragma GCC diagnostic pop
+#endif
 
     // intersect
     static rel_ty_t intersect( const rel_ty_t& a, const rel_ty_t& b )
