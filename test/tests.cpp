@@ -44,31 +44,31 @@ TEST_CASE( "base basics" , "[base]" ) {
 }
 
 TEST_CASE( "type_t basics", "[type_t]" ) {
-    std::vector<type_t> tys( {
+    const std::vector<type_t> tys( {
          { Void }, { Bool }, { Int }, { Float }, { Double }, { String },
          { Date }, { Time }, { Object }
         } );
-    std::vector<std::string_view> expected(
+    const std::vector<std::string_view> expected(
         {
              "Void", "Bool", "Int", "Float", "Double", "String"
             ,"Date", "Time", "Object"
         } );
     std::vector<std::string_view> res;
     res.reserve(tys.size());
-    for( auto & ty : tys ) {
+    for( const auto & ty : tys ) {
         res.push_back( ty_to_string(ty) );
     }
     REQUIRE( res == expected );
 }
 
 TEST_CASE( "col_tys_t basics", "[col_tys_t]") {
-    col_tys_t col_tys( {
+    const col_tys_t col_tys( {
          { "A", { Void } }, { "B", { Bool } }, { "C", { Int } }
         ,{ "D", { Float } }, { "E", { Double } }, { "F", { String } }
         ,{ "G", { Date } }, { "H", { Time } }, { "I", { Object } }
         } );
 
-    std::string_view expected =
+    const std::string_view expected =
         "{ A : Void, B : Bool, C : Int, D : Float, E : Double, F : String, "
         "G : Date, H : Time, I : Object }";
 
@@ -183,9 +183,9 @@ TEST_CASE( "relation_builder basics", "[relation_builder]") {
     col_tys_t expected { { "A", { Int } }, { "B" , { Float } }, { "C", { Double } } };
     REQUIRE( builder.type() == expected );
 
-    int a = 1;
-    float b = 3.14F;
-    double c = 2.718281828459045;
+    const int a = 1;
+    const float b = 3.14F;
+    const double c = 2.718281828459045;
 
     builder.push_back( a, b, c );
 
