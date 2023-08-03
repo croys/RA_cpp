@@ -43,37 +43,36 @@ constexpr auto operator<=>(const type_t& ta, const type_t& tb)
     return ta.ty_con <=> tb.ty_con;
 }
 
-// FIXME: use a static constexpr map of enum -> string_view
-std::ostream& ty_to_stream( std::ostream& os, const type_t& ty )
+constexpr std::string_view ty_to_string( const type_t& ty )
 {
+    using sv = std::string_view;
     switch (ty.ty_con) {
-        case Void:      return os << "Void";
-        case Bool:      return os << "Bool";
-        case Int:       return os << "Int";
-        case Float:     return os << "Float";
-        case Double:    return os << "Double";
-        case String:    return os << "String";
-        case Date:      return os << "Date";
-        case Time:      return os << "Time";
-        case Object:    return os << "Object";
+        case Void:      return sv( "Void" );
+        case Bool:      return sv( "Bool" );
+        case Int:       return sv( "Int" );
+        case Float:     return sv( "Float" );
+        case Double:    return sv( "Double" );
+        case String:    return sv( "String" );
+        case Date:      return sv( "Date" );
+        case Time:      return sv( "Time" );
+        case Object:    return sv( "Object" );
     }
     throw std::invalid_argument( "Unrecognised type" );
 }
 
-// FIXME: constexpr
-// FIXME: string view
-std::string ty_to_string( const type_t& ty )
+std::ostream& ty_to_stream( std::ostream& os, const type_t& ty )
 {
     switch (ty.ty_con) {
-        case Void:      return "Void";
-        case Bool:      return "Bool";
-        case Int:       return "Int";
-        case Float:     return "Float";
-        case Double:    return "Double";
-        case String:    return "String";
-        case Date:      return "Date";
-        case Time:      return "Time";
-        case Object:    return "Object";
+        case Void:
+        case Bool:
+        case Int:
+        case Float:
+        case Double:
+        case String:
+        case Date:
+        case Time:
+        case Object:
+            os << ty_to_string( ty );
     }
     throw std::invalid_argument( "Unrecognised type" );
 }

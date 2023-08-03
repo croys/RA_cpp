@@ -48,12 +48,12 @@ TEST_CASE( "type_t basics", "[type_t]" ) {
          { Void }, { Bool }, { Int }, { Float }, { Double }, { String },
          { Date }, { Time }, { Object }
         } );
-    std::vector<std::string> expected(
+    std::vector<std::string_view> expected(
         {
              "Void", "Bool", "Int", "Float", "Double", "String"
             ,"Date", "Time", "Object"
-    } );
-    std::vector<std::string> res;
+        } );
+    std::vector<std::string_view> res;
     res.reserve(tys.size());
     for( auto & ty : tys ) {
         res.push_back( ty_to_string(ty) );
