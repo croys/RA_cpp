@@ -367,12 +367,10 @@ struct column_storage_base
         return this->m_vec.at( i );
     }
 
-    // NOLINTBEGIN(readability-make-member-function-const)
     constexpr reference operator[]( size_type i )
     {
         return this->m_vec[i];
     }
-    // NOLINTEND(readability-make-member-function-const)
 
     constexpr T* data() noexcept
     {
