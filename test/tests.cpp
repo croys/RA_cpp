@@ -55,9 +55,8 @@ TEST_CASE( "type_t basics", "[type_t]" ) {
         } );
     std::vector<std::string_view> res;
     res.reserve(tys.size());
-    for( const auto & ty : tys ) {
-        res.push_back( ty_to_string(ty) );
-    }
+    std::transform( tys.cbegin(), tys.cend(), std::back_inserter(res),
+        ty_to_string );
     REQUIRE( res == expected );
 }
 
