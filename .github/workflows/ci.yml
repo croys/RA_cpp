@@ -51,6 +51,10 @@ jobs:
           # mingw is determined by this author to be too buggy to support
           - os: windows-2019
             compiler: gcc-11
+          # llvm-15.0.x seems to have some Windows specific issues...
+          # FIXME: re-enable at some point
+          - os: windows-2019
+            compiler: llvm-15.0.7
 
         include:
           # Add appropriate variables for gcov version required. This will intentionally break
@@ -63,8 +67,8 @@ jobs:
             enable_ipo: Off
             gcov_executable: "llvm-cov gcov"
 
-          - os: macos-10.15
-            enable_ipo: Off
+          # - os: macos-10.15
+          #   enable_ipo: Off
 
           # Set up preferred package generators, for given build configurations
           - build_type: Release
