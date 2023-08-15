@@ -24,7 +24,7 @@ template<typename T, typename U>
 void throw_with( U s )
 {
     // FIXME: do this statically
-    std::ostringstream* ss = dynamic_cast<std::ostringstream*>(&s);
+    const std::ostringstream* ss = dynamic_cast<const std::ostringstream*>(&s);
     if (ss) {
         throw T( ss->str() );
     } else {
