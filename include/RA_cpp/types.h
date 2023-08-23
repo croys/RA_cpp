@@ -45,17 +45,17 @@ constexpr auto operator<=>(const type_t& ta, const type_t& tb)
 
 constexpr std::string_view ty_to_string( const type_t& ty )
 {
-    using sv = std::string_view;
+    using namespace std::string_view_literals;
     switch (ty.ty_con) {
-        case Void:      return sv( "Void" );
-        case Bool:      return sv( "Bool" );
-        case Int:       return sv( "Int" );
-        case Float:     return sv( "Float" );
-        case Double:    return sv( "Double" );
-        case String:    return sv( "String" );
-        case Date:      return sv( "Date" );
-        case Time:      return sv( "Time" );
-        case Object:    return sv( "Object" );
+        case Void:      return "Void"sv;
+        case Bool:      return "Bool"sv;
+        case Int:       return "Int"sv;
+        case Float:     return "Float"sv;
+        case Double:    return "Double"sv;
+        case String:    return "String"sv;
+        case Date:      return "Date"sv;
+        case Time:      return "Time"sv;
+        case Object:    return "Object"sv;
     }
     throw std::invalid_argument( "Unrecognised type" );
 }
