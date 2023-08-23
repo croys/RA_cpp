@@ -11,6 +11,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <RA_cpp/sample_library.hpp>
+#include <RA_cpp/storage.h>
 #include <RA_cpp/relation.h>
 
 using namespace rac;
