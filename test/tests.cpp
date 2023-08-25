@@ -176,11 +176,20 @@ TEST_CASE( "relation_builder basics", "[relation_builder]") {
     std::array< std::uint8_t, 32768 > buffer{};
     std::pmr::monotonic_buffer_resource rsrc( buffer.data(), buffer.size() );
 
-    //std::vector<std::string> col_names { "A", "B", "C" };
-    std::vector col_names { "A", "B", "C" };
-    relation_builder<int, float, double> builder( &rsrc, col_names.begin(), col_names.end() );
+    // FIXME: Convenience helper structs, want something like:
+    //
+    // relation_builder builder
+    //  { { "A", col<int> }, { "B", col<float> }, { "C", col<double> } }
+    //
 
-    col_tys_t expected { { "A", { Int } }, { "B" , { Float } }, { "C", { Double } } };
+    std::vector col_names { "A", "B", "C" };
+    relation_builder<int, float, double> builder(
+        &rsrc, col_names.begin(), col_names.end()
+    );
+
+    col_tys_t expected {
+        { "A", { Int } }, { "B" , { Float } }, { "C", { Double } }
+    };
     REQUIRE( builder.type() == expected );
 
     const int a = 1;
@@ -188,20 +197,19 @@ TEST_CASE( "relation_builder basics", "[relation_builder]") {
     const double c = 2.718281828459045;
 
     builder.push_back( a, b, c );
-
     builder.dump( std::cout );
-
     REQUIRE( builder.size() == 1 );
-    REQUIRE( builder.at( 0 ) == std::tuple<int, float, double>( a, b, c ) );
+    REQUIRE( builder.at( 0 ) == std::tuple { a, b, c } );
 
     builder.push_back( 2 * a, 2.0F * b, 2.0 * c );
-
+    builder.dump( std::cout );
     REQUIRE( builder.size() == 2 );
-    REQUIRE( builder.at( 1 ) == std::tuple<int, float, double>( 2 * a, 2.0F * b, 2.0 * c ) );
+    REQUIRE( builder.at( 1 ) == std::tuple { 2 * a, 2.0F * b, 2.0 * c } );
 
     builder.push_back( 200, 4.5, 2.3 );
-
     builder.dump( std::cout );
+    REQUIRE( builder.size() == 3 );
+    REQUIRE( builder.at( 2 ) == std::tuple { 200, 4.5, 2.3} );
 }
 
 
