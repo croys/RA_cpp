@@ -202,7 +202,10 @@ public:
     // use these to build the relation...
 };
 
-
+// Deduction guide
+template<typename R, typename... Ts>
+relation_builder( R rsrc, col_desc<Ts>... )
+-> relation_builder<Ts...>;
 
 // Helper function works...
 template<typename... Ts>
@@ -214,10 +217,6 @@ make_relation_builder(
     return relation_builder<Ts...>( rsrc, args... );
 }
 
-// Deduction guide
-template<typename R, typename... Ts>
-relation_builder( R rsrc, col_desc<Ts>... )
--> relation_builder<Ts...>;
 
 #ifdef _MSC_VER
     #pragma warning(push)
