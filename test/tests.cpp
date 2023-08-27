@@ -171,7 +171,7 @@ TEST_CASE( "column_storage basics", "[column_storage] [untyped_column_storage]")
 
 }
 
-
+#if 1
 TEST_CASE( "relation_builder basics", "[relation_builder]") {
     std::array< std::uint8_t, 32768 > buffer{};
     std::pmr::monotonic_buffer_resource rsrc( buffer.data(), buffer.size() );
@@ -182,10 +182,207 @@ TEST_CASE( "relation_builder basics", "[relation_builder]") {
     //  { { "A", col<int> }, { "B", col<float> }, { "C", col<double> } }
     //
 
-    std::vector col_names { "A", "B", "C" };
+
+    const std::vector col_names { "A", "B", "C" };
+#if 0
     relation_builder<int, float, double> builder(
         &rsrc, col_names.begin(), col_names.end()
     );
+#endif
+    relation_builder<int, float, double> builder( &rsrc, col_names );
+
+    col_tys_t expected {
+        { "A", { Int } }, { "B" , { Float } }, { "C", { Double } }
+    };
+    REQUIRE( builder.type() == expected );
+    REQUIRE( builder.size() == 0 );
+
+    const int a = 1;
+    const float b = 3.14F;
+    const double c = 2.718281828459045;
+
+    builder.push_back( a, b, c );
+    builder.dump( std::cout );
+    REQUIRE( builder.size() == 1 );
+    REQUIRE( builder.at( 0 ) == std::tuple { a, b, c } );
+
+    builder.push_back( 2 * a, 2.0F * b, 2.0 * c );
+    builder.dump( std::cout );
+    REQUIRE( builder.size() == 2 );
+    REQUIRE( builder.at( 1 ) == std::tuple { 2 * a, 2.0F * b, 2.0 * c } );
+
+    builder.push_back( 200, 4.5, 2.3 );
+    builder.dump( std::cout );
+    REQUIRE( builder.size() == 3 );
+    REQUIRE( builder.at( 2 ) == std::tuple { 200, 4.5, 2.3} );
+
+}
+#endif
+
+#if 1
+TEST_CASE( "relation_builder basics2", "[relation_builder]") {
+    std::array< std::uint8_t, 32768 > buffer{};
+    std::pmr::monotonic_buffer_resource rsrc( buffer.data(), buffer.size() );
+
+    // FIXME: Convenience helper structs, want something like:
+    //
+    // relation_builder builder
+    //  { { "A", col<int> }, { "B", col<float> }, { "C", col<double> } }
+    //
+
+
+
+    col_tys_t expected {
+        { "A", { Int } }, { "B" , { Float } }, { "C", { Double } }
+    };
+
+
+    // const rel_builder2 rb2( std::tuple< std::string_view, type_t_traits<int> >{ "A", tyInt() } );
+#if 0
+    const rel_builder2 rb2(
+        std::tuple< std::string_view, type_t_traits<int> >{ "A", tyInt() },
+        std::tuple< std::string_view, type_t_traits<float> >{ "B", tyFloat() },
+        std::tuple< std::string_view, type_t_traits<double> >{ "C", tyDouble() }
+         );
+#endif
+
+#if 0
+    using namespace std::string_view_literals;
+
+    const rel_builder2 rb2(
+            std::tuple { "A", tyInt() }
+         );
+#endif
+
+    // Doesn't work?
+    // template<typename T>
+    // using col = col_desc<T>;
+    // const rel_builder2 rb2(
+    //      col( "A", tyInt() )
+    //     ,col( "B", tyFloat() )
+    //     ,col( "C", tyDouble() )
+    //  );
+#if 0
+    const rel_builder2 rb2(
+         col_desc( "A", tyInt() )
+        ,col_desc( "B", tyFloat() )
+        ,col_desc( "C", tyDouble() )
+    );
+
+    std::cout << "rb2 m_col_tys\n";
+    col_tys_to_stream(std::cout, rb2.m_col_tys);
+#endif
+
+#if 0
+    // FIXME: below leads to errors in use of `.at()` etc...
+    // try template deduction guide
+    //
+    // or... just give up and use a convenience function
+    //
+    //relation_builder builder(
+    relation_builder<int, float, double> builder(
+        &rsrc
+        ,col_desc( "A", tyInt() )
+        ,col_desc( "B", tyFloat() )
+        ,col_desc( "C", tyDouble() )
+    );
+#endif
+
+    //auto builder = make_relation_builder(
+    //relation_builder builder = make_relation_builder(
+    relation_builder builder(
+         &rsrc
+        ,col_desc( "A", tyInt() )
+        ,col_desc( "B", tyFloat() )
+        ,col_desc( "C", tyDouble() )
+    );
+
+    std::cout << "builder m_col_tys\n";
+    col_tys_to_stream( std::cout,  builder.type() );
+    std::cout << "\n";
+    builder.dump(std::cout);
+
+    REQUIRE( builder.type() == expected );
+    REQUIRE( builder.size() == 0 );
+
+    const int a = 1;
+    const float b = 3.14F;
+    const double c = 2.718281828459045;
+
+    builder.push_back( a, b, c );
+    builder.dump( std::cout );
+    REQUIRE( builder.size() == 1 );
+    REQUIRE( builder.at( 0 ) == std::tuple { a, b, c } );
+
+    builder.push_back( 2 * a, 2.0F * b, 2.0 * c );
+    builder.dump( std::cout );
+    REQUIRE( builder.size() == 2 );
+    REQUIRE( builder.at( 1 ) == std::tuple { 2 * a, 2.0F * b, 2.0 * c } );
+
+    builder.push_back( 200, 4.5, 2.3 );
+    builder.dump( std::cout );
+    REQUIRE( builder.size() == 3 );
+    REQUIRE( builder.at( 2 ) == std::tuple { 200, 4.5, 2.3} );
+
+    /*
+    Ideal would be:
+
+    rel_builder rb2(
+        { "A", tyInt() },
+        { "B", tyFloat() },
+        { "C", tyDouble() }
+    );
+
+    or:
+
+    rel_builder rb2(
+        "A", tyInt(),
+        "B", tyFloat(),
+        "C", tyDouble()
+    );
+
+    Following would be OK:
+
+    rel_builder2 rb2(
+        col<int>    ("A"),
+        col<float>  ("B"),
+        col<double> ("C")
+    );
+
+    rel_builder rb2(
+        col( "A", tyInt() ),
+        col( "B", tyFloat() ),
+        col( "C", tyDouble() )
+    );
+
+    maybe even:
+
+    rel_builder rb2(
+        {   "A",        "B",        "C" }
+        ,   tyInt(),    tyFloat(),  tyDouble()
+    )
+
+    */
+
+
+
+}
+#endif
+
+
+#if 0
+TEST_CASE( "relation_builder basics2", "[relation_builder]") {
+    std::array< std::uint8_t, 32768 > buffer{};
+    std::pmr::monotonic_buffer_resource rsrc( buffer.data(), buffer.size() );
+
+    // FIXME: deduction
+    // relation_builder<int, float, double> builder( &rsrc,
+    //     { "A", tyInt() }, { "B", tyFloat() }, { "C", tyDouble() } );
+
+    auto builder = make_relation_builder( &rsrc,
+        { "A", tyInt() }, { "B", tyFloat() }, { "C", tyDouble() }
+    );
+
 
     col_tys_t expected {
         { "A", { Int } }, { "B" , { Float } }, { "C", { Double } }
@@ -211,6 +408,7 @@ TEST_CASE( "relation_builder basics", "[relation_builder]") {
     REQUIRE( builder.size() == 3 );
     REQUIRE( builder.at( 2 ) == std::tuple { 200, 4.5, 2.3} );
 }
+#endif
 
 
 TEST_CASE( "rel_ty_t basics", "[rel_ty_t]" ) {
