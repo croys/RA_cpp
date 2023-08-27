@@ -29,7 +29,7 @@ jobs:
       # and your own projects needs
       matrix:
         os:
-          - ubuntu-20.04.6
+          - ubuntu-20.04
 #          - ubuntu-22.04
 #          - macos-10.15
           - windows-2019
@@ -77,7 +77,7 @@ jobs:
             package_generator: TBZ2
 
           # This exists solely to make sure a non-multiconfig build works
-          - os: ubuntu-20.04.6
+          - os: ubuntu-20.04
             compiler: gcc-11
             generator: "Unix Makefiles"
             build_type: Debug
@@ -203,7 +203,9 @@ jobs:
 
 
       - name: Publish to codecov
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           flags: ${{ runner.os }}
           name: ${{ runner.os }}-coverage
