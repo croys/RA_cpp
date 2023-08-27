@@ -78,6 +78,58 @@ std::ostream& ty_to_stream( std::ostream& os, const type_t& ty )
 }
 
 
+// statically determined type convenience traits (mainly for witness)
+
+template<typename T>
+struct type_t_traits
+{
+};
+
+
+template<> struct type_t_traits<void>
+{
+    static constexpr type_t ty() { return type_t { ty_con_t::Void }; }
+};
+
+template<> struct type_t_traits<bool>
+{
+    static constexpr type_t ty() { return type_t { ty_con_t::Bool }; }
+};
+
+template<> struct type_t_traits<int>
+{
+    static constexpr type_t ty() { return type_t { ty_con_t::Int }; }
+};
+
+template<> struct type_t_traits<float>
+{
+    static constexpr type_t ty() { return type_t { ty_con_t::Float }; }
+};
+
+template<> struct type_t_traits<double>
+{
+    static constexpr type_t ty() { return type_t { ty_con_t::Double }; }
+};
+
+template<> struct type_t_traits<std::string_view>
+{
+    static constexpr type_t ty() { return type_t { ty_con_t::String }; }
+};
+
+
+// FIXME: date, time, object, std:optional, etc..
+
+// Convenience
+
+constexpr auto tyVoid()     { return type_t_traits<void>(); }
+constexpr auto tyBool()     { return type_t_traits<bool>(); }
+constexpr auto tyInt()      { return type_t_traits<int>(); }
+constexpr auto tyFloat()    { return type_t_traits<float>(); }
+constexpr auto tyDouble()   { return type_t_traits<double>(); }
+constexpr auto tyString()   { return type_t_traits<std::string_view>(); }
+
+
+
 // columns are typed and have names and ordering
 // used in relation_builder and table_view
 typedef std::vector< std::pair< std::string, type_t > > col_tys_t;
@@ -264,7 +316,7 @@ public:
 
 
     // all_but
-
+    // FIXME: "exclude"/"excluding"?
 
     col_tys_t m_tys;
 };
