@@ -25,12 +25,12 @@ template<typename T>
 struct col_desc
 {
     template< typename S >
-    col_desc( S name , type_t_traits<T> type ) :
-        m_name( name ), m_type( type )
-    {}
+    col_desc( S name ) : m_name( name ) {}
+
+    template< typename S >
+    col_desc( S name , type_t_traits<T> /* phantom arg */ ) : m_name( name ) {}
 
     std::string_view    m_name;
-    type_t_traits<T>    m_type;
 };
 
 
@@ -106,6 +106,10 @@ public:
     template<typename C>
     explicit relation_builder( std::pmr::memory_resource* rsrc, const C& names )
         : relation_builder( rsrc, names.begin(), names.end() )
+    {
+    }
+
+    explicit relation_builder( std::pmr::memory_resource* /* unused */ )
     {
     }
 

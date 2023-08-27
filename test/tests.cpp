@@ -175,18 +175,15 @@ TEST_CASE( "relation_builder basics", "[relation_builder]") {
     std::array< std::uint8_t, 32768 > buffer{};
     std::pmr::monotonic_buffer_resource rsrc( buffer.data(), buffer.size() );
 
-
-    const std::vector col_names { "A", "B", "C" };
-#if 0
-    relation_builder<int, float, double> builder(
-        &rsrc, col_names.begin(), col_names.end()
-    );
-#endif
-    relation_builder<int, float, double> builder( &rsrc, col_names );
-
     col_tys_t expected {
         { "A", { Int } }, { "B" , { Float } }, { "C", { Double } }
     };
+
+    const std::vector col_names { "A", "B", "C" };
+
+    // Construction from container
+    relation_builder<int, float, double> builder( &rsrc, col_names );
+
     REQUIRE( builder.type() == expected );
     REQUIRE( builder.size() == 0 );
 
@@ -209,6 +206,13 @@ TEST_CASE( "relation_builder basics", "[relation_builder]") {
     REQUIRE( builder.size() == 3 );
     REQUIRE( builder.at( 2 ) == std::tuple { 200, 4.5, 2.3} );
 
+    // Construction from iterators
+    const relation_builder<int, float, double> builder2(
+        &rsrc, col_names.begin(), col_names.end()
+    );
+
+    REQUIRE( builder2.type() == expected );
+    REQUIRE( builder2.size() == 0 );
 }
 
 TEST_CASE( "relation_builder basics2", "[relation_builder]") {
@@ -299,6 +303,21 @@ TEST_CASE( "relation_builder basics2", "[relation_builder]") {
     builder.dump( std::cout );
     REQUIRE( builder.size() == 3 );
     REQUIRE( builder.at( 2 ) == std::tuple { 200, 4.5, 2.3} );
+
+    const relation_builder builder2(
+        &rsrc,
+        col_desc<int>(      "A"),
+        col_desc<float>(    "B"),
+        col_desc<double>(   "C")
+    );
+    REQUIRE( builder2.type() == expected );
+    REQUIRE( builder2.size() == 0 );
+
+    CHECK_THROWS( relation_builder<int>( &rsrc, std::vector { "A", "B" } ) );
+
+    const relation_builder builder3( &rsrc );
+    REQUIRE( builder3.type().empty() );
+    REQUIRE( builder3.size() == 0 );
 }
 
 
