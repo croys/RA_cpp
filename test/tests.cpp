@@ -127,8 +127,29 @@ TEST_CASE( "column_storage basics", "[column_storage] [untyped_column_storage]")
     REQUIRE( cs_int.cend() != cs_int.cbegin() );
     REQUIRE( cs_int.cend() > cs_int.cbegin() );
     REQUIRE( cs_int.cbegin() < cs_int.cend() );
+    REQUIRE( cs_int.cbegin() + 0 == cs_int.cbegin() );
+    REQUIRE( 0 + cs_int.cbegin()== cs_int.cbegin() );
+    REQUIRE( cs_int.cbegin() + 1 > cs_int.cbegin() );
+    REQUIRE( 1 + cs_int.cbegin() > cs_int.cbegin() );
+    REQUIRE( cs_int.cbegin() < cs_int.cbegin() + 1 );
+    REQUIRE( cs_int.cbegin() < 1 + cs_int.cbegin() );
+    REQUIRE( cs_int.cbegin() <= cs_int.cbegin() );
     REQUIRE( cs_int.cbegin() + n == cs_int.cend() );
+    REQUIRE( n + cs_int.cbegin() == cs_int.cend() );
     REQUIRE( cs_int.cend() - n == cs_int.cbegin() );
+    REQUIRE( cs_int.cend() - cs_int.cbegin() == n );
+
+    {
+        auto it = cs_int.cbegin();
+        it += 10;
+        REQUIRE( it == cs_int.cbegin() + 10 );
+    }
+
+    {
+        auto it = cs_int.cend();
+        it -= 10;
+        REQUIRE( it == cs_int.cend() - 10 );
+    }
 
     // iterator
     {
@@ -152,8 +173,33 @@ TEST_CASE( "column_storage basics", "[column_storage] [untyped_column_storage]")
     REQUIRE( cs_int.end() != cs_int.begin() );
     REQUIRE( cs_int.end() > cs_int.begin() );
     REQUIRE( cs_int.begin() < cs_int.end() );
+    REQUIRE( cs_int.begin() + 0 == cs_int.begin() );
+    REQUIRE( 0 + cs_int.begin()== cs_int.begin() );
     REQUIRE( cs_int.begin() + n == cs_int.end() );
     REQUIRE( cs_int.end() - n == cs_int.begin() );
+    REQUIRE( cs_int.begin() + 0 == cs_int.begin() );
+    REQUIRE( 0 + cs_int.begin()== cs_int.begin() );
+    REQUIRE( cs_int.begin() + 1 > cs_int.begin() );
+    REQUIRE( 1 + cs_int.begin() > cs_int.begin() );
+    REQUIRE( cs_int.begin() < cs_int.begin() + 1 );
+    REQUIRE( cs_int.begin() < 1 + cs_int.begin() );
+    REQUIRE( cs_int.begin() <= cs_int.begin() );
+    REQUIRE( cs_int.begin() + n == cs_int.end() );
+    REQUIRE( n + cs_int.begin() == cs_int.end() );
+    REQUIRE( cs_int.end() - n == cs_int.begin() );
+    REQUIRE( cs_int.end() - cs_int.begin() == n );
+
+    {
+        auto it = cs_int.begin();
+        it += 10;
+        REQUIRE( it == cs_int.begin() + 10 );
+    }
+
+    {
+        auto it = cs_int.end();
+        it -= 10;
+        REQUIRE( it == cs_int.end() - 10 );
+    }
 
     column_storage<int>::iterator it;
     {
