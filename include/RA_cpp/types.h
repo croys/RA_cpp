@@ -73,8 +73,11 @@ std::ostream& ty_to_stream( std::ostream& os, const type_t& ty )
         case Time:
         case Object:
             os << ty_to_string( ty );
+            break;
+        default:
+            throw std::invalid_argument( "Unrecognised type" );
     }
-    throw std::invalid_argument( "Unrecognised type" );
+    return os;
 }
 
 

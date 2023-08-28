@@ -51,12 +51,30 @@ TEST_CASE( "type_t basics", "[type_t]" ) {
              "Void", "Bool", "Int", "Float", "Double", "String"
             ,"Date", "Time", "Object"
         } );
-    std::vector<std::string_view> res;
-    res.reserve(tys.size());
-    std::transform( tys.cbegin(), tys.cend(), std::back_inserter(res),
-        ty_to_string );
-    REQUIRE( res == expected );
-}
+    {
+        std::vector<std::string_view> res;
+        res.reserve(tys.size());
+        std::transform( tys.cbegin(), tys.cend(), std::back_inserter(res),
+            ty_to_string );
+        REQUIRE( res == expected );
+    }
+
+    {
+        std::vector<std::string> res;
+        res.reserve(tys.size());
+        for( auto ty : tys ) {
+            std::ostringstream ss;
+            ty_to_stream(ss, ty);
+            res.emplace_back( ss.str() );
+        }
+        std::vector<std::string_view> res_;
+        res_.reserve(res.size());
+        std::transform( res.cbegin(), res.cend(),
+            std::back_inserter(res_),
+            [] (auto &s) { return std::string_view(s); }
+        );
+        REQUIRE( res_ == expected );
+    }}
 
 TEST_CASE( "col_tys_t basics", "[col_tys_t]") {
     const col_tys_t col_tys( {
