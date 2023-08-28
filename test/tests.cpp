@@ -108,7 +108,7 @@ TEST_CASE( "column_storage basics", "[column_storage] [untyped_column_storage]")
     // const iterator
     {
         int i = 0;
-        for( auto it = cs_int.cbegin(); it != cs_int.cend(); ++it )
+        for( auto it = ucs_int.cbegin(); it != ucs_int.cend(); ++it )
         {
             ++i;
         }
@@ -116,45 +116,45 @@ TEST_CASE( "column_storage basics", "[column_storage] [untyped_column_storage]")
     }
     {
         int i = 0;
-        for( auto it = cs_int.cend(); it != cs_int.cbegin(); --it )
+        for( auto it = ucs_int.cend(); it != ucs_int.cbegin(); --it )
         {
             ++i;
         }
         REQUIRE( i == n );
     }
-    REQUIRE( cs_int.cbegin() == cs_int.cbegin() );
-    REQUIRE( cs_int.cend() == cs_int.cend() );
-    REQUIRE( cs_int.cend() != cs_int.cbegin() );
-    REQUIRE( cs_int.cend() > cs_int.cbegin() );
-    REQUIRE( cs_int.cbegin() < cs_int.cend() );
-    REQUIRE( cs_int.cbegin() + 0 == cs_int.cbegin() );
-    REQUIRE( 0 + cs_int.cbegin()== cs_int.cbegin() );
-    REQUIRE( cs_int.cbegin() + 1 > cs_int.cbegin() );
-    REQUIRE( 1 + cs_int.cbegin() > cs_int.cbegin() );
-    REQUIRE( cs_int.cbegin() < cs_int.cbegin() + 1 );
-    REQUIRE( cs_int.cbegin() < 1 + cs_int.cbegin() );
-    REQUIRE( cs_int.cbegin() <= cs_int.cbegin() );
-    REQUIRE( cs_int.cbegin() + n == cs_int.cend() );
-    REQUIRE( n + cs_int.cbegin() == cs_int.cend() );
-    REQUIRE( cs_int.cend() - n == cs_int.cbegin() );
-    REQUIRE( cs_int.cend() - cs_int.cbegin() == n );
+    REQUIRE( ucs_int.cbegin() == ucs_int.cbegin() );
+    REQUIRE( ucs_int.cend() == ucs_int.cend() );
+    REQUIRE( ucs_int.cend() != ucs_int.cbegin() );
+    REQUIRE( ucs_int.cend() > ucs_int.cbegin() );
+    REQUIRE( ucs_int.cbegin() < ucs_int.cend() );
+    REQUIRE( ucs_int.cbegin() + 0 == ucs_int.cbegin() );
+    REQUIRE( 0 + ucs_int.cbegin()== ucs_int.cbegin() );
+    REQUIRE( ucs_int.cbegin() + 1 > ucs_int.cbegin() );
+    REQUIRE( 1 + ucs_int.cbegin() > ucs_int.cbegin() );
+    REQUIRE( ucs_int.cbegin() < ucs_int.cbegin() + 1 );
+    REQUIRE( ucs_int.cbegin() < 1 + ucs_int.cbegin() );
+    REQUIRE( ucs_int.cbegin() <= ucs_int.cbegin() );
+    REQUIRE( ucs_int.cbegin() + n == ucs_int.cend() );
+    REQUIRE( n + ucs_int.cbegin() == ucs_int.cend() );
+    REQUIRE( ucs_int.cend() - n == ucs_int.cbegin() );
+    REQUIRE( ucs_int.cend() - ucs_int.cbegin() == n );
 
     {
-        auto it = cs_int.cbegin();
+        auto it = ucs_int.cbegin();
         it += 10;
-        REQUIRE( it == cs_int.cbegin() + 10 );
+        REQUIRE( it == ucs_int.cbegin() + 10 );
     }
 
     {
-        auto it = cs_int.cend();
+        auto it = ucs_int.cend();
         it -= 10;
-        REQUIRE( it == cs_int.cend() - 10 );
+        REQUIRE( it == ucs_int.cend() - 10 );
     }
 
     // iterator
     {
         int i = 0;
-        for( auto it = cs_int.begin(); it != cs_int.end(); ++it )
+        for( auto it = ucs_int.begin(); it != ucs_int.end(); ++it )
         {
             ++i;
         }
@@ -162,43 +162,43 @@ TEST_CASE( "column_storage basics", "[column_storage] [untyped_column_storage]")
     }
     {
         int i = 0;
-        for( auto it = cs_int.end(); it != cs_int.begin(); --it )
+        for( auto it = ucs_int.end(); it != ucs_int.begin(); --it )
         {
             ++i;
         }
         REQUIRE( i == n );
     }
-    REQUIRE( cs_int.begin() == cs_int.begin() );
-    REQUIRE( cs_int.end() == cs_int.end() );
-    REQUIRE( cs_int.end() != cs_int.begin() );
-    REQUIRE( cs_int.end() > cs_int.begin() );
-    REQUIRE( cs_int.begin() < cs_int.end() );
-    REQUIRE( cs_int.begin() + 0 == cs_int.begin() );
-    REQUIRE( 0 + cs_int.begin()== cs_int.begin() );
-    REQUIRE( cs_int.begin() + n == cs_int.end() );
-    REQUIRE( cs_int.end() - n == cs_int.begin() );
-    REQUIRE( cs_int.begin() + 0 == cs_int.begin() );
-    REQUIRE( 0 + cs_int.begin()== cs_int.begin() );
-    REQUIRE( cs_int.begin() + 1 > cs_int.begin() );
-    REQUIRE( 1 + cs_int.begin() > cs_int.begin() );
-    REQUIRE( cs_int.begin() < cs_int.begin() + 1 );
-    REQUIRE( cs_int.begin() < 1 + cs_int.begin() );
-    REQUIRE( cs_int.begin() <= cs_int.begin() );
-    REQUIRE( cs_int.begin() + n == cs_int.end() );
-    REQUIRE( n + cs_int.begin() == cs_int.end() );
-    REQUIRE( cs_int.end() - n == cs_int.begin() );
-    REQUIRE( cs_int.end() - cs_int.begin() == n );
+    REQUIRE( ucs_int.begin() == ucs_int.begin() );
+    REQUIRE( ucs_int.end() == ucs_int.end() );
+    REQUIRE( ucs_int.end() != ucs_int.begin() );
+    REQUIRE( ucs_int.end() > ucs_int.begin() );
+    REQUIRE( ucs_int.begin() < ucs_int.end() );
+    REQUIRE( ucs_int.begin() + 0 == ucs_int.begin() );
+    REQUIRE( 0 + ucs_int.begin()== ucs_int.begin() );
+    REQUIRE( ucs_int.begin() + n == ucs_int.end() );
+    REQUIRE( ucs_int.end() - n == ucs_int.begin() );
+    REQUIRE( ucs_int.begin() + 0 == ucs_int.begin() );
+    REQUIRE( 0 + ucs_int.begin()== ucs_int.begin() );
+    REQUIRE( ucs_int.begin() + 1 > ucs_int.begin() );
+    REQUIRE( 1 + ucs_int.begin() > ucs_int.begin() );
+    REQUIRE( ucs_int.begin() < ucs_int.begin() + 1 );
+    REQUIRE( ucs_int.begin() < 1 + ucs_int.begin() );
+    REQUIRE( ucs_int.begin() <= ucs_int.begin() );
+    REQUIRE( ucs_int.begin() + n == ucs_int.end() );
+    REQUIRE( n + ucs_int.begin() == ucs_int.end() );
+    REQUIRE( ucs_int.end() - n == ucs_int.begin() );
+    REQUIRE( ucs_int.end() - ucs_int.begin() == n );
 
     {
-        auto it = cs_int.begin();
+        auto it = ucs_int.begin();
         it += 10;
-        REQUIRE( it == cs_int.begin() + 10 );
+        REQUIRE( it == ucs_int.begin() + 10 );
     }
 
     {
-        auto it = cs_int.end();
+        auto it = ucs_int.end();
         it -= 10;
-        REQUIRE( it == cs_int.end() - 10 );
+        REQUIRE( it == ucs_int.end() - 10 );
     }
 
     column_storage<int>::iterator it;

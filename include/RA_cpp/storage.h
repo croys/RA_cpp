@@ -28,7 +28,7 @@ struct const_value_iterator
     typedef int64_t         difference_type;
     //typedef const value_t*  reference_type;
 
-    const_value_iterator( const value_t* ptr, size_t size )
+    explicit constexpr const_value_iterator( const value_t* ptr, size_t size )
         : m_ptr( ptr ), m_size( size )
     {}
 
@@ -36,27 +36,27 @@ struct const_value_iterator
     // Iterator
 
     // operator* purposefully left out
-    const_value_iterator& operator++() noexcept
+    constexpr const_value_iterator& operator++() noexcept
     {
         m_ptr += m_size;
         return *this;
     }
 
     // ForwardIterator
-    const_value_iterator operator++(int) noexcept // post increment
+    constexpr const_value_iterator operator++(int) noexcept // post increment
     {
         return const_value_iterator( m_ptr + m_size, m_size );
     }
 
     // BidirectionalIterator
 
-    const_value_iterator& operator--() noexcept
+    constexpr const_value_iterator& operator--() noexcept
     {
         m_ptr -= m_size;
         return *this;
     }
 
-    const_value_iterator operator--(int) noexcept // post-decrement
+    constexpr const_value_iterator operator--(int) noexcept // post-decrement
     {
         return const_value_iterator( m_ptr - m_size, m_size );
     }
@@ -81,48 +81,80 @@ struct const_value_iterator
         return *this;
     }
 
-    const value_t* get() const noexcept
+    constexpr const value_t* get() const noexcept
     {
         return m_ptr;
     }
 
+    constexpr size_t elem_size() const noexcept
+    {
+        return m_size;
+    }
+
+private:
     const value_t*  m_ptr;
     size_t          m_size;
 };
 
 
-const_value_iterator operator+(
-     const const_value_iterator&            it
-    ,const_value_iterator::difference_type  d
+template<typename T>
+constexpr const_value_iterator operator+(
+     const const_value_iterator&    it
+    ,const T                        d
 ) noexcept {
-    return const_value_iterator( it.m_ptr + d * static_cast<long>(it.m_size),
-        it.m_size );
+    return const_value_iterator(
+         it.get()
+            + static_cast<const_value_iterator::difference_type>(d)
+            * static_cast<long>(it.elem_size())
+        ,it.elem_size()
+    );
 }
 
-const_value_iterator operator+(
-     const_value_iterator::difference_type  d
-    ,const const_value_iterator&            it
+template<typename T>
+constexpr const_value_iterator operator+(
+     const T                        d
+    ,const const_value_iterator&    it
 ) noexcept {
-    return const_value_iterator( it.m_ptr + d * static_cast<long>(it.m_size),
-        it.m_size );
+    return const_value_iterator(
+         it.get()
+            + static_cast<const_value_iterator::difference_type>(d)
+            * static_cast<long>(it.elem_size())
+        ,it.elem_size()
+    );
 }
 
-const_value_iterator::difference_type operator-(
+constexpr const_value_iterator::difference_type operator-(
      const const_value_iterator& a
     ,const const_value_iterator& b
 ) noexcept {
-    return ( a.m_ptr - b.m_ptr ) / static_cast<long>(a.m_size);
+    return ( a.get() - b.get() ) / static_cast<long>(a.elem_size());
 }
 
-
-constexpr bool operator==(const const_value_iterator& a, const const_value_iterator& b)
-{
-    return a.m_ptr == b.m_ptr;
+template<typename T>
+constexpr const_value_iterator operator-(
+     const const_value_iterator&    a
+    ,const T                        b
+) noexcept {
+    return const_value_iterator(
+         a.get()
+            - ( static_cast<const_value_iterator::difference_type>(b)
+                * static_cast<long>(a.elem_size()) )
+        ,a.elem_size()
+    );
 }
 
-constexpr auto operator<=>(const const_value_iterator& a, const const_value_iterator& b)
-{
-    return a.m_ptr <=> b.m_ptr;
+constexpr bool operator==(
+     const const_value_iterator& a
+    ,const const_value_iterator& b
+) {
+    return a.get() == b.get();
+}
+
+constexpr auto operator<=>(
+     const const_value_iterator& a
+    ,const const_value_iterator& b
+) {
+    return a.get() <=> b.get();
 }
 
 
@@ -131,34 +163,34 @@ struct value_iterator
 {
     typedef int64_t         difference_type;
 
-    value_iterator( value_t* ptr, size_t size )
+    constexpr explicit value_iterator( value_t* ptr, size_t size )
         : m_ptr( ptr ), m_size( size )
     {}
 
     // Iterator
 
     // operator* purposefully left out
-    value_iterator& operator++() noexcept
+    constexpr value_iterator& operator++() noexcept
     {
         m_ptr += m_size;
         return *this;
     }
 
     // ForwardIterator
-    value_iterator operator++(int) noexcept // post increment
+    constexpr value_iterator operator++(int) noexcept // post increment
     {
         return value_iterator( m_ptr + m_size, m_size );
     }
 
     // BidirectionalIterator
 
-    value_iterator& operator--() noexcept
+    constexpr value_iterator& operator--() noexcept
     {
         m_ptr -= m_size;
         return *this;
     }
 
-    value_iterator operator--(int) noexcept // post-decrement
+    constexpr value_iterator operator--(int) noexcept // post-decrement
     {
         return value_iterator( m_ptr - m_size, m_size );
     }
@@ -179,48 +211,76 @@ struct value_iterator
         return *this;
     }
 
-    value_t* get() const noexcept
+    constexpr value_t* get() const noexcept
     {
         return m_ptr;
     }
 
+    constexpr size_t elem_size() const noexcept
+    {
+        return m_size;
+    }
+
+private:
     value_t*    m_ptr;
     size_t      m_size;
 };
 
 
-value_iterator operator+(
-     const value_iterator&              it
-    ,value_iterator::difference_type    d
+template<typename T>
+constexpr value_iterator operator+(
+     const value_iterator&  it
+    ,const T                d
 ) noexcept {
-    return value_iterator( it.m_ptr + d * static_cast<long>(it.m_size),
-        it.m_size );
+    return value_iterator(
+         it.get()
+            + static_cast<value_iterator::difference_type>(d)
+            * static_cast<long>(it.elem_size())
+        ,it.elem_size()
+    );
 }
 
-value_iterator operator+(
-     value_iterator::difference_type    d
-    ,const value_iterator&              it
+template<typename T>
+constexpr value_iterator operator+(
+     const T                d
+    ,const value_iterator&  it
 ) noexcept {
-    return value_iterator( it.m_ptr + d * static_cast<long>(it.m_size),
-        it.m_size );
+    return value_iterator(
+         it.get()
+            + static_cast<value_iterator::difference_type>(d)
+            * static_cast<long>(it.elem_size())
+        ,it.elem_size()
+    );
 }
 
-value_iterator::difference_type operator-(
+constexpr value_iterator::difference_type operator-(
      const value_iterator& a
     ,const value_iterator& b
 ) noexcept {
-    return ( a.m_ptr - b.m_ptr ) / static_cast<long>(a.m_size);
+    return ( a.get() - b.get() ) / static_cast<long>(a.elem_size());
 }
 
-
-constexpr bool operator==(const value_iterator& a, const value_iterator& b)
-{
-    return a.m_ptr == b.m_ptr;
+template<typename T>
+constexpr value_iterator operator-(
+     const value_iterator&  a
+    ,const T                b
+) noexcept {
+    return value_iterator(
+         a.get()
+            - ( static_cast<value_iterator::difference_type>(b)
+                * static_cast<long>(a.elem_size()) )
+        ,a.elem_size()
+    );
 }
 
-constexpr auto operator<=>(const value_iterator& a, const value_iterator& b)
+constexpr bool operator==( const value_iterator& a, const value_iterator& b )
 {
-    return a.m_ptr <=> b.m_ptr;
+    return a.get() == b.get();
+}
+
+constexpr auto operator<=>( const value_iterator& a, const value_iterator& b )
+{
+    return a.get() <=> b.get();
 }
 
 
@@ -546,7 +606,7 @@ public:
         // std::move( std::execution::par_unseq, fb, fe, to_ );
         // std::move( std::execution::unseq, fb, fe, to_ );
         std::move( fb, fe, to_ );
-    }
+    } 
 
 private:
     storage_ptr_t m_storage;
