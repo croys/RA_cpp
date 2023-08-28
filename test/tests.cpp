@@ -5,9 +5,6 @@
 #include <iostream>
 #include <memory_resource>
 
-// #define CATCH_CONFIG_MAIN
-// #include "catch.hpp"
-
 #include <catch2/catch_test_macros.hpp>
 
 #include <RA_cpp/sample_library.hpp>
@@ -97,6 +94,8 @@ TEST_CASE( "column_storage basics", "[column_storage] [untyped_column_storage]")
     REQUIRE( cis->empty() );
 
     const size_t n = 100;
+    is->reserve( n );
+    REQUIRE( cs_int.empty() );
     is->resize( n );
     REQUIRE( cs_int.size() == n );
     REQUIRE( ucs_int.size() == n );
@@ -106,13 +105,63 @@ TEST_CASE( "column_storage basics", "[column_storage] [untyped_column_storage]")
     REQUIRE( size_t(cis->cend() - cis->cbegin()) == cis->size() );
 
 
+    // const iterator
+    {
+        int i = 0;
+        for( auto it = cs_int.cbegin(); it != cs_int.cend(); ++it )
+        {
+            ++i;
+        }
+        REQUIRE( i == n );
+    }
+    {
+        int i = 0;
+        for( auto it = cs_int.cend(); it != cs_int.cbegin(); --it )
+        {
+            ++i;
+        }
+        REQUIRE( i == n );
+    }
+    REQUIRE( cs_int.cbegin() == cs_int.cbegin() );
+    REQUIRE( cs_int.cend() == cs_int.cend() );
+    REQUIRE( cs_int.cend() != cs_int.cbegin() );
+    REQUIRE( cs_int.cend() > cs_int.cbegin() );
+    REQUIRE( cs_int.cbegin() < cs_int.cend() );
+    REQUIRE( cs_int.cbegin() + n == cs_int.cend() );
+    REQUIRE( cs_int.cend() - n == cs_int.cbegin() );
+
+    // iterator
+    {
+        int i = 0;
+        for( auto it = cs_int.begin(); it != cs_int.end(); ++it )
+        {
+            ++i;
+        }
+        REQUIRE( i == n );
+    }
+    {
+        int i = 0;
+        for( auto it = cs_int.end(); it != cs_int.begin(); --it )
+        {
+            ++i;
+        }
+        REQUIRE( i == n );
+    }
+    REQUIRE( cs_int.begin() == cs_int.begin() );
+    REQUIRE( cs_int.end() == cs_int.end() );
+    REQUIRE( cs_int.end() != cs_int.begin() );
+    REQUIRE( cs_int.end() > cs_int.begin() );
+    REQUIRE( cs_int.begin() < cs_int.end() );
+    REQUIRE( cs_int.begin() + n == cs_int.end() );
+    REQUIRE( cs_int.end() - n == cs_int.begin() );
+
     column_storage<int>::iterator it;
     {
-      int  i = 0;
-      for ( it = cs_int.begin(); it != cs_int.end(); ++it )
-      {
-          *it = i++;
-      }
+        int  i = 0;
+        for ( it = cs_int.begin(); it != cs_int.end(); ++it )
+        {
+            *it = i++;
+        }
     }
 
     auto as_cint = []( const value_t* v )

@@ -530,11 +530,8 @@ public:
         T* to_      = t( to.get() );
         // abstract out execution policy?
         // select based on size?
-        if (false) {
-            std::copy( std::execution::par_unseq, fb, fe, to_ );
-        } else {
-            std::copy( fb, fe, to_ );
-        }
+        // std::copy( std::execution::par_unseq, fb, fe, to_ );
+        std::copy( fb, fe, to_ );
     }
 
     void move(   iterator   fromb
@@ -546,12 +543,9 @@ public:
         T* fe   = t( frome.get() );
         T* to_  = t( to.get() );
 
-        if (false) {
-            std::move( std::execution::par_unseq, fb, fe, to_ );
-        } else {
-            //std::move( std::execution::unseq, fb, fe, to_ );
-            std::move( fb, fe, to_ );
-        }
+        // std::move( std::execution::par_unseq, fb, fe, to_ );
+        // std::move( std::execution::unseq, fb, fe, to_ );
+        std::move( fb, fe, to_ );
     }
 
 private:
