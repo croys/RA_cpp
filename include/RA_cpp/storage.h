@@ -722,12 +722,6 @@ struct column_storage_t
 template<typename T, typename... Ts>
 struct col_helper
 {
-    static void collect_ops( std::vector<IValue*>& ops )
-    {
-        ops.emplace_back( untyped_value_ops<T>::ops() );
-        col_helper<Ts...>::collect_ops(ops);
-    }
-
     static constexpr std::tuple<T, Ts...> row(
          const std::vector<IValue::storage_ptr_t>&  cols
         ,size_t                                     col
@@ -735,6 +729,8 @@ struct col_helper
     )
     {
         return std::tuple_cat(
+            // FIXME: this is wrong, should be using
+            // value_ops::get<> or similar
             std::tuple<T>( *(reinterpret_cast<const T*>( cols[ col ]->at( row ) ) ) ),
             col_helper<Ts...>::row( cols, col + 1, row )
         );
@@ -745,11 +741,6 @@ struct col_helper
 template<typename T>
 struct col_helper<T>
 {
-    static void collect_ops( std::vector<IValue*>& ops )
-    {
-        ops.emplace_back( untyped_value_ops<T>::ops() );
-    }
-
     static constexpr std::tuple<T> row(
          const std::vector<IValue::storage_ptr_t>&  cols
         ,size_t                                     col
@@ -760,12 +751,10 @@ struct col_helper<T>
     }
 };
 
-template<typename... Ts>
+template<typename ... Ts>
 std::vector<IValue*> get_ops()
 {
-    std::vector<IValue*> res;
-    col_helper<Ts...>::collect_ops( res );
-    return res;
+    return std::vector { untyped_value_ops<Ts>::ops()... };
 }
 
 
