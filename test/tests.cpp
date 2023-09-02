@@ -486,6 +486,52 @@ TEST_CASE( "rel_ty_t basics", "[rel_ty_t]" ) {
     REQUIRE( rel_ty_t::intersect( rel_ty_ab, rel_ty_b ) == rel_ty_b );
 }
 
+
+TEST_CASE( "relation basics", "[relation_builder], [relation]") {
+    std::array< std::uint8_t, 32768 > buffer{};
+    std::pmr::monotonic_buffer_resource rsrc( buffer.data(), buffer.size() );
+
+    col_tys_t expected {
+        { "Z", { Int } }, { "Y" , { Float } }, { "X", { Double } }
+    };
+
+    relation_builder builder(
+        &rsrc,
+        col_desc<int>(      "Z"),
+        col_desc<float>(    "Y"),
+        col_desc<double>(   "X")
+    );
+
+    builder.dump(std::cout);
+
+    REQUIRE( builder.type() == expected );
+    REQUIRE( builder.size() == 0 );
+
+    const int a = 1;
+    const float b = 3.14F;
+    const double c = 2.718281828459045;
+
+    builder.push_back( a, b, c );
+    builder.push_back( 2 * a, 2.0F * b, 2.0 * c );
+    builder.push_back( 200, 4.5, 2.3 );
+
+
+    const relation rel( builder.release() );
+
+    REQUIRE( rel.size() == 3 );
+
+    col_tys_t expected_2 {
+         { "X",     { Double } }
+        ,{ "Y" ,    { Float } }
+        ,{ "Z",     { Int } }
+    };
+    REQUIRE( rel.type().m_tys == expected_2 );
+    rel.dump( std::cout );
+
+    REQUIRE( builder.size() == 0 );
+}
+
+
 // NOLINTEND(readability-function-cognitive-complexity)
 // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 // NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)

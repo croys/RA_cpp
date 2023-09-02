@@ -30,7 +30,14 @@ struct col_desc
     template< typename S >
     col_desc( S name , type_t_traits<T> /* phantom arg */ ) : m_name( name ) {}
 
-    std::string_view    m_name;
+    constexpr std::string_view  name() const noexcept { return m_name; }
+    constexpr type_t            ty() const { return type_t_traits<T>::ty(); }
+    constexpr std::pair<std::string_view, type_t> col_ty() const
+    {
+        return std::pair { this->name(), this->ty() };
+    }
+private:
+    std::string_view m_name;
 };
 
 
@@ -50,20 +57,6 @@ struct relation_builder
 {
 private:
     typedef std::shared_ptr<std::pmr::memory_resource> resource_ptr_t;
-
-
-    template< typename T>
-    void make_cols( col_desc<T> c )
-    {
-        m_col_tys.emplace_back( c.m_name, type_t_traits<T>::ty() );
-    }
-
-    template<typename T, typename...Ts>
-    void make_cols( col_desc<T> c, Ts... args )
-    {
-        m_col_tys.emplace_back( c.m_name, type_t_traits<T>::ty() );
-        make_cols( args... );
-    }
 
     void make_storage( std::pmr::memory_resource* rsrc )
     {
@@ -113,11 +106,10 @@ public:
     {
     }
 
-    template<typename T, typename...Ts>
+    template<typename...Ts>
     explicit relation_builder(
          std::pmr::memory_resource* rsrc
-        ,col_desc<T> arg0
-        ,Ts... args
+        ,const col_desc<Ts>&...     args
     ) {
         // Note:
         // `Types...` doesn't expand without a deduction guide
@@ -126,7 +118,12 @@ public:
         // This seems questionable...
         //
         m_ops = get_ops<Types...>();
-        make_cols( arg0, args... );
+
+        for( auto [ name, ty ] : { args.col_ty()... } )
+        {
+            m_col_tys.emplace_back( name, ty );
+        }
+
         make_storage( rsrc );
     }
 
@@ -146,12 +143,14 @@ private:
     template<typename T>
     constexpr void _push_back( size_t col, const T& v )
     {
+        // FIXME: use assign
         this->m_cols[col]->push_back( reinterpret_cast<const value_t*>( &v ) );
     }
 
     template<typename T, typename... Ts>
     constexpr void _push_back( size_t col, const T& v, Ts... vs )
     {
+        // FIXME: use assign
         this->m_cols[col]->push_back( reinterpret_cast<const value_t*>( &v ) );
         this->_push_back( col + 1, vs...);
     }
@@ -190,6 +189,32 @@ public:
         os << "\n\n";
 
         return cols_to_stream( os, m_col_tys, m_ops, m_cols );
+    }
+
+    void clear()
+    {
+        m_col_tys.clear();
+        m_ops.clear();
+        m_resources.clear();
+        m_cols.clear();
+    }
+
+    auto release()
+    {
+        std::tuple<
+             col_tys_t
+            ,std::vector<IValue*>
+            ,std::vector<resource_ptr_t>
+            ,std::vector<IValue::storage_ptr_t>
+        > res;
+
+        std::swap( get<0>(res), m_col_tys );
+        std::swap( get<1>(res), m_ops );
+        std::swap( get<2>(res), m_resources );
+        std::swap( get<3>(res), m_cols );
+
+        this->clear();
+        return res;
     }
 
     col_tys_t                           m_col_tys;
@@ -335,14 +360,6 @@ struct relation : IRelation
     ///
     ///
 
-    // construction
-
-    // from builder
-
-    // build relation type
-
-    // re-arrange columns
-
     // keys - do we want a primary, physical key?
     // all other keys need to be checked at construction time, but do
     // we need to maintain structures (e.g. map) for all?
@@ -355,6 +372,68 @@ struct relation : IRelation
     // can also specify if columns should be compressed
     // - primary key can be stored via RLE/tree stucture
     // - probably only worthwhile for heavier types?
+
+
+    // construction from relation_builder
+    // relation takes ownership of storage
+    //
+    explicit relation(
+        std::tuple<
+             col_tys_t
+            ,std::vector<IValue*>
+            ,std::vector<resource_ptr_t>
+            ,std::vector<IValue::storage_ptr_t>
+        >&& res
+        // FIXME: keys
+    ) : m_ty( std::get<0>(res) )
+        {
+        const size_t n = get<0>(res).size();
+        if ( n == std::get<1>(res).size() ) {
+            m_ops.resize(n);
+        } else {
+            throw std::invalid_argument(
+                "size of ops doesn't match number of columns");
+        }
+        if ( n == std::get<2>(res).size() ) {
+            m_resources.resize(n);
+        } else {
+            throw std::invalid_argument(
+                "size of resources doesn't match number of columns");
+        }
+        if ( n == std::get<3>(res).size() ) {
+            m_cols.resize(n);
+        } else {
+            throw std::invalid_argument(
+                "size of cols doesn't match number of columns");
+        }
+
+        // re-arrange columns & take ownership
+        for (size_t i = 0; i < n; ++i)
+        {
+            auto it = std::find(
+                m_ty.m_tys.cbegin(), m_ty.m_tys.cend(), std::get<0>(res)[i] );
+            if( it != m_ty.m_tys.end() )
+            {
+                size_t j = size_t(it - m_ty.m_tys.cbegin());
+                std::swap( m_ops[j],        std::get<1>(res)[i]);
+                std::swap( m_resources[j],  std::get<2>(res)[i]);
+                std::swap( m_cols[j],       std::get<3>(res)[i]);
+            }
+        }
+    }
+
+    std::ostream& dump( std::ostream& os ) const
+    {
+        // dump type
+
+        os << "relation ";
+        col_tys_to_stream( os, m_ty.m_tys );
+        os << "\n\n";
+
+        return cols_to_stream( os, m_ty.m_tys, m_ops, m_cols );
+    }
+
+
 
     rel_ty_t                            m_ty;
     std::vector<col_tys_t>              m_keys; // FIXME: pmr
@@ -385,6 +464,7 @@ struct ITable
     virtual ~ITable() {}
 };
 
+// FIXME: ITableM for dynamically typed updates
 
 
 // table_view_t - statically typed view onto a relation
