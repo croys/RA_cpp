@@ -3,6 +3,7 @@
 #include <vector>
 #include <array>
 #include <iostream>
+#include <memory>
 #include <memory_resource>
 
 #include <catch2/catch_test_macros.hpp>
@@ -502,8 +503,6 @@ TEST_CASE( "relation basics", "[relation_builder], [relation]") {
         col_desc<double>(   "X")
     );
 
-    builder.dump(std::cout);
-
     REQUIRE( builder.type() == expected );
     REQUIRE( builder.size() == 0 );
 
@@ -515,6 +514,7 @@ TEST_CASE( "relation basics", "[relation_builder], [relation]") {
     builder.push_back( 2 * a, 2.0F * b, 2.0 * c );
     builder.push_back( 200, 4.5, 2.3 );
 
+    builder.dump(std::cout);
 
     const relation rel( builder.release() );
 
@@ -530,6 +530,96 @@ TEST_CASE( "relation basics", "[relation_builder], [relation]") {
 
     REQUIRE( builder.size() == 0 );
 }
+
+
+TEST_CASE( "table_view basics", "[relation_builder], [relation], [table_view]") {
+    std::array< std::uint8_t, 32768 > buffer{};
+    std::pmr::monotonic_buffer_resource rsrc( buffer.data(), buffer.size() );
+
+    const col_tys_t expected {
+        { "Z", { Int } }, { "Y" , { Float } }, { "X", { Double } }
+    };
+
+    relation_builder builder(
+        &rsrc,
+        col_desc<int>(      "Z"),
+        col_desc<float>(    "Y"),
+        col_desc<double>(   "X")
+    );
+
+    REQUIRE( builder.type() == expected );
+    REQUIRE( builder.size() == 0 );
+
+    const int a = 1;
+    const float b = 3.14F;
+    const double c = 2.718281828459045;
+
+    builder.push_back( 2 * a, 2.0F * b, 2.0 * c );
+    builder.push_back( 200, 4.5, 2.3 );
+    builder.push_back( a, b, c );
+
+    builder.dump( std::cout );
+
+    auto rel = std::make_shared<relation>( builder.release() );
+    auto irel = static_pointer_cast<IRelation>( rel );
+
+    // FIXME: need dump that works over IRelation and ITable
+
+    std::cout
+        << *reinterpret_cast<const double*>( irel->at(0,0) )
+        << " "
+        << *reinterpret_cast<const float*>( irel->at(0,1) )
+        << " "
+        << *reinterpret_cast<const int*>( irel->at(0,2) )
+        << "\n";
+
+    REQUIRE( *reinterpret_cast<const double*>( irel->at(0,0) ) == 2.0 * c );
+    REQUIRE( *reinterpret_cast<const float*>( irel->at(0,1) ) == 2.0F * b );
+    REQUIRE( *reinterpret_cast<const int*>( irel->at(0,2) ) == 2 * a );
+
+    const table_view tbl( irel, std::vector { "X", "Y", "Z" } );
+
+
+    std::cout
+        << *reinterpret_cast<const double*>( tbl.at(0,0) )
+        << " "
+        << *reinterpret_cast<const float*>( tbl.at(0,1) )
+        << " "
+        << *reinterpret_cast<const int*>( tbl.at(0,2) )
+        << "\n";
+
+    std::cout
+        << *reinterpret_cast<const double*>( tbl.at(1,0) )
+        << " "
+        << *reinterpret_cast<const float*>( tbl.at(1,1) )
+        << " "
+        << *reinterpret_cast<const int*>( tbl.at(1,2) )
+        << "\n";
+
+    std::cout
+        << *reinterpret_cast<const double*>( tbl.at(2,0) )
+        << " "
+        << *reinterpret_cast<const float*>( tbl.at(2,1) )
+        << " "
+        << *reinterpret_cast<const int*>( tbl.at(2,2) )
+        << "\n";
+
+
+    // FIXME: need value_ops<>::get
+    REQUIRE( *reinterpret_cast<const double*>(  tbl.at(0,0) ) == 2.3 );
+    REQUIRE( *reinterpret_cast<const float*>(   tbl.at(0,1) ) == 4.5F );
+    REQUIRE( *reinterpret_cast<const int*>(     tbl.at(0,2) ) == 200 );
+
+    REQUIRE( *reinterpret_cast<const double*>(  tbl.at(1,0) ) == c );
+    REQUIRE( *reinterpret_cast<const float*>(   tbl.at(1,1) ) == b );
+    REQUIRE( *reinterpret_cast<const int*>(     tbl.at(1,2) ) == a );
+
+    REQUIRE( *reinterpret_cast<const double*>(  tbl.at(2,0) ) == 2.0 * c );
+    REQUIRE( *reinterpret_cast<const float*>(   tbl.at(2,1) ) == 2.0F * b );
+    REQUIRE( *reinterpret_cast<const int*>(     tbl.at(2,2) ) == 2 * a );
+
+}
+
 
 
 // NOLINTEND(readability-function-cognitive-complexity)

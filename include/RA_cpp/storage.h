@@ -1,5 +1,6 @@
 #pragma once
 
+#include <compare>
 #include <memory_resource>
 #include <vector>
 #include <algorithm>
@@ -7,6 +8,7 @@
 #include <memory>
 #include <ostream>
 #include <sstream>
+#include <cmath>
 
 #include "base.h"
 #include "types.h"
@@ -16,6 +18,8 @@ namespace rac
 
 struct value_t{};
 
+
+// FIXME: use std::iterator
 
 // Note: we implement as much of the stdlib iterators as makes sense
 // As we are abstracting over variable sized storage of unknown type
@@ -683,7 +687,19 @@ struct IValue
 {
     virtual constexpr type_t type() const noexcept = 0;
 
-    virtual std::ostream& to_stream( const value_t* v, std::ostream& os ) const = 0;
+    // FIXME:
+
+    // init,clear,move,copy/asign,swap
+
+    // compare/lt,eq - stability requirements?
+    // partial vs total
+
+    // total - stability requirements?
+    virtual std::strong_ordering cmp( const value_t* a, const value_t* b )
+        const noexcept = 0;
+
+    virtual std::ostream& to_stream( const value_t* v, std::ostream& os )
+        const = 0;
 
     // really belongs in IColumn/IColumnBuilder/etc...
     typedef std::shared_ptr<IStorage> storage_ptr_t;
@@ -696,6 +712,91 @@ protected:
     ~IValue() {}
 };
 
+
+template<typename T>
+struct strong_ordering
+{
+    static constexpr std::strong_ordering cmp(
+         const T* a
+        ,const T* b
+    ) noexcept
+    {
+        return *a <=> *b;
+    }
+};
+
+template<>
+struct strong_ordering<float>
+{
+    static /* constexpr */ std::strong_ordering cmp(
+         const float* a
+        ,const float* b
+    ) noexcept
+    {
+        // Note: std::partial_ordering not enum/int, can't use switch :-()
+        auto c = *a <=> *b;
+        if ( c == std::partial_ordering::less )
+            return std::strong_ordering::less;
+        if ( c == std::partial_ordering::equivalent )
+            return std::strong_ordering::equivalent;
+        if ( c == std::partial_ordering::greater )
+            return std::strong_ordering::greater;
+        if ( c == std::partial_ordering::unordered )
+        {
+            if ( std::isnan( *a ) ) {
+                if ( std::isnan( *b ) )
+                    return std::strong_ordering::equivalent;
+                else
+                    return std::strong_ordering::greater;
+            } else {
+                if ( std::isnan( *b ) )
+                    return std::strong_ordering::less;
+                else
+                    // not possible
+                    return std::strong_ordering::less;
+            }
+        }
+        // not possible
+        return std::strong_ordering::less;
+    }
+};
+
+// FIXME: refactor and share with above?
+template<>
+struct strong_ordering<double>
+{
+    static /* constexpr */ std::strong_ordering cmp(
+         const double* a
+        ,const double* b
+    ) noexcept
+    {
+        // Note: std::partial_ordering not enum/int, can't use switch :-()
+        auto c = *a <=> *b;
+        if ( c == std::partial_ordering::less )
+            return std::strong_ordering::less;
+        if ( c == std::partial_ordering::equivalent )
+            return std::strong_ordering::equivalent;
+        if ( c == std::partial_ordering::greater )
+            return std::strong_ordering::greater;
+        if ( c == std::partial_ordering::unordered )
+        {
+            if ( std::isnan( *a ) ) {
+                if ( std::isnan( *b ) )
+                    return std::strong_ordering::equivalent;
+                else
+                    return std::strong_ordering::greater;
+            } else {
+                if ( std::isnan( *b ) )
+                    return std::strong_ordering::less;
+                else
+                    // not possible
+                    return std::strong_ordering::less;
+            }
+        }
+        // not possible
+        return std::strong_ordering::less;
+    }
+};
 
 
 template<typename T>
@@ -728,12 +829,19 @@ private:
     // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
 
 public:
+
     // IValue
     using typename IValue::storage_ptr_t;
 
     constexpr type_t type() const noexcept override
     {
         return val_t::type();
+    }
+
+    std::strong_ordering cmp( const value_t* a, const value_t* b )
+        const noexcept override
+    {
+        return strong_ordering<T>::cmp( ct( a ), ct( b ) );
     }
 
     //

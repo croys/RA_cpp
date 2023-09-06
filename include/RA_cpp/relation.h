@@ -7,7 +7,7 @@
 #include <memory>
 #include <ostream>
 #include <sstream>
-//#include <concepts>
+#include <ranges>
 
 #include "base.h"
 #include "types.h"
@@ -52,12 +52,26 @@ private:
 //
 // Note: order of columns is preserved, so this is really a table builder
 // also, relation builder needs to check key validity
+
+
+typedef
+    std::shared_ptr<std::pmr::memory_resource>
+relation_builder_resource_ptr_t;
+
+// Use to pass ownership of resources
+struct relation_builder_resources
+{
+    col_tys_t                                       m_col_tys;
+    std::vector<IValue*>                            m_ops;
+    std::vector<relation_builder_resource_ptr_t>    m_resources;
+    std::vector<IValue::storage_ptr_t>              m_cols;
+};
+
+
 template< typename... Types >
 struct relation_builder
 {
 private:
-    typedef std::shared_ptr<std::pmr::memory_resource> resource_ptr_t;
-
     void make_storage( std::pmr::memory_resource* rsrc )
     {
         for (const auto& op : m_ops ) {
@@ -72,6 +86,9 @@ private:
     }
 
 public:
+
+    typedef relation_builder_resource_ptr_t resource_ptr_t;
+
     // FIXME: we probably should take ownership of the resource
     template<typename Iter>
     explicit relation_builder(
@@ -94,8 +111,8 @@ public:
         make_storage(rsrc);
     }
 
-    // FIXME: concepts not working, figure out what flags are needed...
-    //template<std::Container C>
+    // FIXME: concepts not working...
+    //template<SequenceContainer C>
     template<typename C>
     explicit relation_builder( std::pmr::memory_resource* rsrc, const C& names )
         : relation_builder( rsrc, names.begin(), names.end() )
@@ -105,6 +122,13 @@ public:
     explicit relation_builder( std::pmr::memory_resource* /* unused */ )
     {
     }
+
+    // explicit relation_builder(
+    //      std::pmr::memory_resource* rsrc
+    //     ,std::ranges::range auto& names
+    // ) : relation_builder( rsrc, names.begin(), names.end() )
+    // {
+    // }
 
     template<typename...Ts>
     explicit relation_builder(
@@ -201,24 +225,18 @@ public:
 
     auto release()
     {
-        std::tuple<
-             col_tys_t
-            ,std::vector<IValue*>
-            ,std::vector<resource_ptr_t>
-            ,std::vector<IValue::storage_ptr_t>
-        > res;
+        relation_builder_resources res;
 
-        std::swap( get<0>(res), m_col_tys );
-        std::swap( get<1>(res), m_ops );
-        std::swap( get<2>(res), m_resources );
-        std::swap( get<3>(res), m_cols );
-
+        std::swap( res.m_col_tys, m_col_tys );
+        std::swap( res.m_ops, m_ops );
+        std::swap( res.m_resources, m_resources );
+        std::swap( res.m_cols, m_cols );
         this->clear();
+
         return res;
     }
 
     col_tys_t                           m_col_tys;
-    // FIXME: combine following into tuple?
     std::vector<IValue*>                m_ops;
     std::vector<resource_ptr_t>         m_resources;
     std::vector<IValue::storage_ptr_t>  m_cols;
@@ -245,6 +263,11 @@ make_relation_builder(
 ) {
     return relation_builder<Ts...>( rsrc, args... );
 }
+
+
+// FIXME: dynamically typed relation builder
+// might want to rename above to relation_builder_t to be in line
+// with all statically typed classes
 
 
 #ifdef _MSC_VER
@@ -293,6 +316,11 @@ struct IRelation
     virtual col_slice_t colSlice( size_t col, size_t start, size_t end )
         const = 0;
 
+    // FIXME: Will need type_t -> IValue* function, for e.g.
+    // constructing relation values dynamically from a stream
+    // combine with rel_ty/col_tys_t?
+    virtual const std::vector<IValue*>&     value_ops() const noexcept = 0;
+
     virtual ~IRelation() {}
 };
 
@@ -336,7 +364,7 @@ struct relation : IRelation
 
     const value_t* at( size_t row, size_t col ) const override
     {
-        throw not_implemented();
+        return this->m_cols[ col ]->at( row );
     }
 
     row_slice_t rowSlice( size_t start, size_t end ) const override
@@ -346,6 +374,11 @@ struct relation : IRelation
     col_slice_t colSlice( size_t col, size_t start, size_t end ) const override
     {
         throw not_implemented();
+    }
+
+    const std::vector<IValue*>&     value_ops() const noexcept override
+    {
+        return m_ops;
     }
 
 #ifdef _MSC_VER
@@ -378,29 +411,24 @@ struct relation : IRelation
     // relation takes ownership of storage
     //
     explicit relation(
-        std::tuple<
-             col_tys_t
-            ,std::vector<IValue*>
-            ,std::vector<resource_ptr_t>
-            ,std::vector<IValue::storage_ptr_t>
-        >&& res
+        relation_builder_resources&& res
         // FIXME: keys
-    ) : m_ty( std::get<0>(res) )
+    ) : m_ty( res.m_col_tys )
         {
-        const size_t n = get<0>(res).size();
-        if ( n == std::get<1>(res).size() ) {
+        const size_t n = res.m_col_tys.size();
+        if ( n == res.m_ops.size() ) {
             m_ops.resize(n);
         } else {
             throw std::invalid_argument(
                 "size of ops doesn't match number of columns");
         }
-        if ( n == std::get<2>(res).size() ) {
+        if ( n == res.m_resources.size() ) {
             m_resources.resize(n);
         } else {
             throw std::invalid_argument(
                 "size of resources doesn't match number of columns");
         }
-        if ( n == std::get<3>(res).size() ) {
+        if ( n == res.m_cols.size() ) {
             m_cols.resize(n);
         } else {
             throw std::invalid_argument(
@@ -411,13 +439,13 @@ struct relation : IRelation
         for (size_t i = 0; i < n; ++i)
         {
             auto it = std::find(
-                m_ty.m_tys.cbegin(), m_ty.m_tys.cend(), std::get<0>(res)[i] );
+                m_ty.m_tys.cbegin(), m_ty.m_tys.cend(), res.m_col_tys[i] );
             if( it != m_ty.m_tys.end() )
             {
                 size_t j = size_t(it - m_ty.m_tys.cbegin());
-                std::swap( m_ops[j],        std::get<1>(res)[i]);
-                std::swap( m_resources[j],  std::get<2>(res)[i]);
-                std::swap( m_cols[j],       std::get<3>(res)[i]);
+                std::swap( m_ops[j],        res.m_ops[i]);
+                std::swap( m_resources[j],  res.m_resources[i]);
+                std::swap( m_cols[j],       res.m_cols[i]);
             }
         }
     }
@@ -466,6 +494,100 @@ struct ITable
 
 // FIXME: ITableM for dynamically typed updates
 
+// table_view for dynamically typed view onto an IRelation
+
+struct table_view : ITable
+{
+    // FIXME: own comparison function over multiple columns - later
+
+    // FIXME: vector of column name and ascending/descending
+    explicit table_view(
+         std::shared_ptr<IRelation>& rel
+        ,std::ranges::forward_range auto col_names
+    ) : m_rel( rel )
+    {
+        // FIXME: build m_col_tys
+
+        // FIXME: do this with std::views
+        m_col_map.reserve( col_names.size() );
+        for( const auto cn : col_names ) {
+            auto it = m_rel->type().m_tys.cbegin();
+            for ( ; it != m_rel->type().m_tys.cend(); ++it ) {
+                if ( it->first == cn ) {
+                    break;
+                }
+            }
+            if (it == m_rel->type().m_tys.cend()) {
+                throw_with<std::invalid_argument>(
+                    std::ostringstream()
+                    << "Unknown column '" << cn << "'"
+                );
+            } else {
+                auto j = it - m_rel->type().m_tys.cbegin();
+                m_col_map.push_back( size_t( j ) );
+            }
+        }
+
+        // one to one map of rows
+        m_row_map.resize( m_rel->size() );
+        std::iota(m_row_map.begin(), m_row_map.end(), 0 );
+
+        // sort through the mapping
+        auto row_cmp = [&]( size_t a, size_t b )
+        {
+            for (size_t i=0; i<m_col_map.size(); ++i)
+            {
+                auto c = m_col_map[ i ];
+                auto cmp = m_rel->value_ops()[ c ]->cmp(
+                         m_rel->at(a, c)
+                        ,m_rel->at(b, c)
+                );
+
+                if (cmp == std::strong_ordering::less)      return true;
+                if (cmp == std::strong_ordering::greater)   return false;
+            }
+            return false;
+        };
+        std::sort( m_row_map.begin(), m_row_map.end(), row_cmp );
+    }
+
+    // ITable interface
+
+    const col_tys_t&    type() const noexcept override
+    {
+        return m_col_tys;
+    }
+    size_t              size() const noexcept override
+    {
+        return m_col_tys.size();
+    }
+    const value_t*      at( size_t row, size_t col ) const override
+    {
+        //throw not_implemented();
+        // FIXME: bounds check
+        return m_rel->at( this->m_row_map[ row ], this->m_col_map[ col ] );
+    }
+
+    virtual row_slice_t rowSlice( size_t start, size_t end ) const override
+    {
+        throw not_implemented();
+    }
+    virtual col_slice_t colSlice( size_t col, size_t start, size_t end )
+        const override
+    {
+        throw not_implemented();
+    }
+
+    virtual ~table_view() {}
+
+private:
+    std::vector<size_t>         m_col_map;  // column map
+    std::vector<size_t>         m_row_map;  // row ordering map
+    std::shared_ptr<IRelation>  m_rel;
+
+    // ephemeral/dervied
+    col_tys_t                   m_col_tys;
+};
 
 // table_view_t - statically typed view onto a relation
 // In table_view_t columns and rows have ordering
