@@ -525,7 +525,7 @@ TEST_CASE( "relation basics", "[relation_builder], [relation]") {
         ,{ "Y" ,    { Float } }
         ,{ "Z",     { Int } }
     };
-    REQUIRE( rel.type().m_tys == expected_2 );
+    REQUIRE( rel.type() == expected_2 );
     rel.dump( std::cout );
 
     REQUIRE( builder.size() == 0 );
@@ -563,15 +563,7 @@ TEST_CASE( "table_view basics", "[relation_builder], [relation], [table_view]") 
     auto rel = std::make_shared<relation>( builder.release() );
     auto irel = static_pointer_cast<IRelation>( rel );
 
-    // FIXME: need dump that works over IRelation and ITable
-
-    std::cout
-        << *reinterpret_cast<const double*>( irel->at(0,0) )
-        << " "
-        << *reinterpret_cast<const float*>( irel->at(0,1) )
-        << " "
-        << *reinterpret_cast<const int*>( irel->at(0,2) )
-        << "\n";
+    relation_to_stream( std::cout, irel.get() );
 
     REQUIRE( *reinterpret_cast<const double*>( irel->at(0,0) ) == 2.0 * c );
     REQUIRE( *reinterpret_cast<const float*>( irel->at(0,1) ) == 2.0F * b );
@@ -579,31 +571,7 @@ TEST_CASE( "table_view basics", "[relation_builder], [relation], [table_view]") 
 
     const table_view tbl( irel, std::vector { "X", "Y", "Z" } );
 
-
-    std::cout
-        << *reinterpret_cast<const double*>( tbl.at(0,0) )
-        << " "
-        << *reinterpret_cast<const float*>( tbl.at(0,1) )
-        << " "
-        << *reinterpret_cast<const int*>( tbl.at(0,2) )
-        << "\n";
-
-    std::cout
-        << *reinterpret_cast<const double*>( tbl.at(1,0) )
-        << " "
-        << *reinterpret_cast<const float*>( tbl.at(1,1) )
-        << " "
-        << *reinterpret_cast<const int*>( tbl.at(1,2) )
-        << "\n";
-
-    std::cout
-        << *reinterpret_cast<const double*>( tbl.at(2,0) )
-        << " "
-        << *reinterpret_cast<const float*>( tbl.at(2,1) )
-        << " "
-        << *reinterpret_cast<const int*>( tbl.at(2,2) )
-        << "\n";
-
+    relation_to_stream( std::cout, &tbl );
 
     // FIXME: need value_ops<>::get
     REQUIRE( *reinterpret_cast<const double*>(  tbl.at(0,0) ) == 2.3 );

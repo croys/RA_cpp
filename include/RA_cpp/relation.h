@@ -296,20 +296,15 @@ struct col_slice_t
     // FIXME: implement
 };
 
-//
-// IRelation
-//
-// column slices/iterators
-// row slice/iteratos
-//  separete iterator type for column/row slice iterators
-//  asking for slice returns std compatible [begin, end) for each
-//  or slice type has ForwardIterator/etc
 
-struct IRelation
+
+struct IRelationBase
 {
-    virtual const rel_ty_t&                 type() const noexcept = 0;
+    // FIXME: add Relation type to type_t?
+    // Note: Tutorial D calls this the "header"
+    // FIXME: col_types?
+    virtual const col_tys_t&                type() const noexcept = 0;
     virtual size_t                          size() const noexcept = 0;
-    virtual const std::vector<col_tys_t>&   keys() const noexcept = 0;
     virtual const value_t*                  at( size_t row, size_t col )
         const = 0;
     virtual row_slice_t rowSlice( size_t start, size_t end ) const = 0;
@@ -320,6 +315,23 @@ struct IRelation
     // constructing relation values dynamically from a stream
     // combine with rel_ty/col_tys_t?
     virtual const std::vector<IValue*>&     value_ops() const noexcept = 0;
+
+    virtual ~IRelationBase() {}
+};
+
+
+//
+// IRelation
+//
+// column slices/iterators
+// row slice/iteratos
+//  separete iterator type for column/row slice iterators
+//  asking for slice returns std compatible [begin, end) for each
+//  or slice type has ForwardIterator/etc
+
+struct IRelation : IRelationBase
+{
+    virtual const std::vector<col_tys_t>&   keys() const noexcept = 0;
 
     virtual ~IRelation() {}
 };
@@ -338,9 +350,9 @@ struct relation : IRelation
 {
     // IRelation
 
-    const rel_ty_t& type() const noexcept override
+    const col_tys_t& type() const noexcept override
     {
-        return m_ty;
+        return m_ty.m_tys;
     }
 
     size_t size() const noexcept override
@@ -479,16 +491,8 @@ struct relation : IRelation
 // table_view - monotyped view onto a relation
 // In table_view columns and rows have ordering
 
-struct ITable
+struct ITable : IRelationBase
 {
-    virtual const col_tys_t&    type() const noexcept = 0;
-    virtual size_t              size() const noexcept = 0;
-    virtual const value_t*      at( size_t row, size_t col ) const = 0;
-
-    virtual row_slice_t rowSlice( size_t start, size_t end ) const = 0;
-    virtual col_slice_t colSlice( size_t col, size_t start, size_t end )
-        const = 0;
-
     virtual ~ITable() {}
 };
 
@@ -506,29 +510,39 @@ struct table_view : ITable
         ,std::ranges::forward_range auto col_names
     ) : m_rel( rel )
     {
-        // FIXME: build m_col_tys
+        // FIXME: build m_col_tys, m_ops
 
         // FIXME: do this with std::views
         m_col_map.reserve( col_names.size() );
         for( const auto cn : col_names ) {
-            auto it = m_rel->type().m_tys.cbegin();
-            for ( ; it != m_rel->type().m_tys.cend(); ++it ) {
+            auto it = m_rel->type().cbegin();
+            for ( ; it != m_rel->type().cend(); ++it ) {
                 if ( it->first == cn ) {
                     break;
                 }
             }
-            if (it == m_rel->type().m_tys.cend()) {
+            if (it == m_rel->type().cend()) {
                 throw_with<std::invalid_argument>(
                     std::ostringstream()
                     << "Unknown column '" << cn << "'"
                 );
             } else {
-                auto j = it - m_rel->type().m_tys.cbegin();
+                auto j = it - m_rel->type().cbegin();
                 m_col_map.push_back( size_t( j ) );
             }
         }
 
-        // one to one map of rows
+        // build m_col_tys and m_ops
+        const size_t n = m_col_map.size();
+        m_col_tys.reserve( n );
+        m_ops.reserve( n );
+        for ( size_t i=0 ; i < m_col_map.size() ; ++i ) {
+            auto c = m_col_map[i];
+            m_col_tys.emplace_back( m_rel->type()[ c ] );
+            m_ops.emplace_back( m_rel->value_ops()[ c ] );
+        }
+
+        // Start with identity map of rows
         m_row_map.resize( m_rel->size() );
         std::iota(m_row_map.begin(), m_row_map.end(), 0 );
 
@@ -563,9 +577,13 @@ struct table_view : ITable
     }
     const value_t*      at( size_t row, size_t col ) const override
     {
-        //throw not_implemented();
         // FIXME: bounds check
         return m_rel->at( this->m_row_map[ row ], this->m_col_map[ col ] );
+    }
+
+    const std::vector<IValue*>& value_ops() const noexcept override
+    {
+        return m_ops;
     }
 
     virtual row_slice_t rowSlice( size_t start, size_t end ) const override
@@ -587,6 +605,7 @@ private:
 
     // ephemeral/dervied
     col_tys_t                   m_col_tys;
+    std::vector<IValue*>        m_ops;
 };
 
 // table_view_t - statically typed view onto a relation
@@ -606,5 +625,78 @@ private:
 // table is stable, otherwise might get weird UI behaviour
 
 
+// FIXME: move to lib
+// FIXME: use slices when available
+// FIXME: merge with cols_to_stream
+std::ostream& relation_to_stream(
+     std::ostream&           os
+    ,const IRelationBase*   rel
+) {
+    const col_tys_t& col_tys    = rel->type();
+    const size_t n_cols         = col_tys.size();
+    const auto& ops             = rel->value_ops();
+
+    if (n_cols > 0) {
+        const size_t n_rows = rel->size();
+
+        // Work out column widths
+        std::vector<size_t> col_sizes( n_cols );
+        for ( size_t c = 0; c < n_cols; ++c )
+        {
+            col_sizes[ c ] = col_tys[ c ].first.size();
+        }
+
+        // Wiork out colum width and output headers
+        std::ostringstream ss;
+        size_t total_width = 0;
+        for ( size_t c = 0; c < n_cols; ++c )
+        {
+            size_t m = col_sizes[ c ];
+            for( size_t r = 0; r < n_rows; ++r )
+            {
+                ss.str("");
+                ops[ c ]->to_stream( rel->at( r, c ), ss );
+                m = std::max( size_t( ss.tellp() ), m );
+            }
+            col_sizes[ c ] = m;
+
+            if (c > 0) {
+                os << "  ";
+                total_width += 2;
+            }
+            ss.str("");
+            ss.width( static_cast<long>(m) );
+            ss << col_tys[ c ].first;
+            ss.width( 0 );
+            os << ss.str();
+            total_width += m;
+        }
+        os << "\n";
+
+        for ( size_t i=0; i < total_width; ++i )
+        {
+            os << "-";
+        }
+        os << "\n";
+
+        // values
+        for ( size_t r = 0; r < n_rows; ++r )
+        {
+            for( size_t c = 0; c < n_cols; ++c )
+            {
+                if (c > 0) {
+                    os << "  ";
+                }
+                ss.str("");
+                ss.width( static_cast<long>(col_sizes[ c ]) );
+                ops[ c ]->to_stream( rel->at( r, c ), ss );
+                ss.width(0);
+                os << ss.str();
+            }
+            os << "\n";
+        }
+    }
+    return os;
+}
 
 }
