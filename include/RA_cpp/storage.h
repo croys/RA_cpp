@@ -747,13 +747,13 @@ struct strong_ordering<float>
                 if ( std::isnan( *b ) )
                     return std::strong_ordering::equivalent;
                 else
-                    return std::strong_ordering::greater;
+                    return std::strong_ordering::less;
             } else {
                 if ( std::isnan( *b ) )
-                    return std::strong_ordering::less;
+                    return std::strong_ordering::greater;
                 else
                     // not possible
-                    return std::strong_ordering::less;
+                    return std::strong_ordering::greater;
             }
         }
         // not possible
@@ -784,13 +784,13 @@ struct strong_ordering<double>
                 if ( std::isnan( *b ) )
                     return std::strong_ordering::equivalent;
                 else
-                    return std::strong_ordering::greater;
+                    return std::strong_ordering::less;
             } else {
                 if ( std::isnan( *b ) )
-                    return std::strong_ordering::less;
+                    return std::strong_ordering::greater;
                 else
                     // not possible
-                    return std::strong_ordering::less;
+                    return std::strong_ordering::greater;
             }
         }
         // not possible

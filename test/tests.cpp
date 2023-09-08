@@ -5,6 +5,8 @@
 #include <iostream>
 #include <memory>
 #include <memory_resource>
+#include <compare>
+#include <limits>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -588,7 +590,66 @@ TEST_CASE( "table_view basics", "[relation_builder], [relation], [table_view]") 
 
 }
 
+TEST_CASE( "storage/value basics", "[value_ops]" ) {
 
+    // FIXME: prime candidate for property based testing
+    {
+        const int a = 0;
+        const int b = 1;
+        REQUIRE( strong_ordering<int>::cmp( &a, &b ) ==
+            std::strong_ordering::less );
+        REQUIRE( strong_ordering<int>::cmp( &a, &a ) ==
+            std::strong_ordering::equivalent );
+        REQUIRE( strong_ordering<int>::cmp( &b, &b ) ==
+            std::strong_ordering::equivalent );
+        REQUIRE( strong_ordering<int>::cmp( &b, &a ) ==
+            std::strong_ordering::greater );
+    }
+
+    {
+        const float a = 0.0F;
+        const float b = 1.0F;
+        const float n = std::numeric_limits<float>::quiet_NaN();
+        REQUIRE( strong_ordering<float>::cmp( &a, &b ) ==
+            std::strong_ordering::less );
+        REQUIRE( strong_ordering<float>::cmp( &a, &a ) ==
+            std::strong_ordering::equivalent );
+        REQUIRE( strong_ordering<float>::cmp( &b, &b ) ==
+            std::strong_ordering::equivalent );
+        REQUIRE( strong_ordering<float>::cmp( &b, &a ) ==
+            std::strong_ordering::greater );
+
+        REQUIRE( strong_ordering<float>::cmp( &n, &n ) ==
+            std::strong_ordering::equivalent );
+        REQUIRE( strong_ordering<float>::cmp( &n, &a ) ==
+            std::strong_ordering::less );
+        REQUIRE( strong_ordering<float>::cmp( &a, &n ) ==
+            std::strong_ordering::greater );
+
+    }
+
+    {
+        const double a = 0.0;
+        const double b = 1.0;
+        const double n = std::numeric_limits<double>::quiet_NaN();
+        REQUIRE( strong_ordering<double>::cmp( &a, &b ) ==
+            std::strong_ordering::less );
+        REQUIRE( strong_ordering<double>::cmp( &a, &a ) ==
+            std::strong_ordering::equivalent );
+        REQUIRE( strong_ordering<double>::cmp( &b, &b ) ==
+            std::strong_ordering::equivalent );
+        REQUIRE( strong_ordering<double>::cmp( &b, &a ) ==
+            std::strong_ordering::greater );
+
+        REQUIRE( strong_ordering<double>::cmp( &n, &n ) ==
+            std::strong_ordering::equivalent );
+        REQUIRE( strong_ordering<double>::cmp( &n, &a ) ==
+            std::strong_ordering::less );
+        REQUIRE( strong_ordering<double>::cmp( &a, &n ) ==
+            std::strong_ordering::greater );
+    }
+
+}
 
 // NOLINTEND(readability-function-cognitive-complexity)
 // NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)
