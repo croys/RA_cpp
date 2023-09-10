@@ -35,6 +35,7 @@ target_link_libraries(
   PRIVATE RA_cpp::RA_cpp_warnings
           RA_cpp::RA_cpp_options
           RA_cpp::sample_library
+          RA_cpp::ra_cpp_library
           Catch2::Catch2WithMain)
 
 if(WIN32 AND BUILD_SHARED_LIBS)

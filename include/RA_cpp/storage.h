@@ -13,6 +13,13 @@
 #include "base.h"
 #include "types.h"
 
+#ifndef RA_CPP_LIBRARY_HPP
+#define RA_CPP_LIBRARY_HPP
+
+#include <RA_cpp/ra_cpp_library_export.hpp>
+
+#endif
+
 namespace rac
 {
 
@@ -377,7 +384,9 @@ struct column_storage_base
 
     explicit column_storage_base( resource_ptr_t rsrc )
         : m_rsrc( rsrc ), m_vec( rsrc ) {
-        assert( rsrc );
+        if ( !rsrc ) {
+            throw std::invalid_argument( "Must specify pmr resource" );
+        }
     }
 
     // immutable deconstruction
@@ -434,6 +443,7 @@ struct column_storage_base
         return this->m_vec.at( i );
     }
 
+    // cppcheck-suppress functionConst
     constexpr reference operator[]( size_type i )
     {
         return this->m_vec[i];
@@ -749,11 +759,7 @@ struct strong_ordering<float>
                 else
                     return std::strong_ordering::less;
             } else {
-                if ( std::isnan( *b ) )
-                    return std::strong_ordering::greater;
-                else
-                    // not possible
-                    return std::strong_ordering::greater;
+                return std::strong_ordering::greater;
             }
         }
         // not possible
@@ -786,11 +792,7 @@ struct strong_ordering<double>
                 else
                     return std::strong_ordering::less;
             } else {
-                if ( std::isnan( *b ) )
-                    return std::strong_ordering::greater;
-                else
-                    // not possible
-                    return std::strong_ordering::greater;
+                return std::strong_ordering::greater;
             }
         }
         // not possible
@@ -807,16 +809,19 @@ private:
 
     // Convenience
     // NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+    // cppcheck-suppress unusedPrivateFunction
     static constexpr value_t* v( T* x ) noexcept
     {
         return reinterpret_cast<value_t*>(x);
     }
 
+    // cppcheck-suppress unusedPrivateFunction
     static constexpr const value_t* cv( const T* x ) noexcept
     {
         return reinterpret_cast<const value_t*>(x);
     }
 
+    // cppcheck-suppress unusedPrivateFunction
     static constexpr T* t( value_t * x ) noexcept
     {
         return reinterpret_cast<T*>(x);
@@ -920,75 +925,11 @@ std::vector<IValue*> get_ops()
 }
 
 
-std::ostream& cols_to_stream(
+RA_CPP_LIBRARY_EXPORT std::ostream& cols_to_stream(
      std::ostream&                              os
     ,const col_tys_t&                           col_tys
     ,const std::vector<IValue*>&                ops
     ,const std::vector<IValue::storage_ptr_t>&  cols
-)
-{
-    const size_t n_cols = cols.size();
-    if (n_cols > 0) {
-        const size_t n_rows = cols[ 0 ]->size();
-
-        // Work out column widths
-        std::vector<size_t> col_sizes( n_cols );
-        for ( size_t c = 0; c < n_cols; ++c )
-        {
-            col_sizes[ c ] = col_tys[ c ].first.size();
-        }
-
-        std::ostringstream ss;
-        size_t total_width = 0;
-        for ( size_t c = 0; c < n_cols; ++c )
-        {
-            size_t m = col_sizes[ c ];
-            for (auto it = cols[ c ]->cbegin(); it != cols[ c ]->cend(); ++it )
-            {
-                ss.str("");
-                ops[ c ]->to_stream( it.get(), ss );
-                m = std::max( size_t( ss.tellp() ), m );
-            }
-            col_sizes[ c ] = m;
-
-            if (c > 0) {
-                os << "  ";
-                total_width += 2;
-            }
-            ss.str("");
-            ss.width( static_cast<long>(m) );
-            ss << col_tys[ c ].first;
-            ss.width( 0 );
-            os << ss.str();
-            total_width += m;
-        }
-        os << "\n";
-
-        for ( size_t i=0; i < total_width; ++i )
-        {
-            os << "-";
-        }
-        os << "\n";
-
-        // values
-
-        for ( size_t r = 0; r < n_rows; ++r )
-        {
-            for( size_t c = 0; c < n_cols; ++c )
-            {
-                if (c > 0) {
-                    os << "  ";
-                }
-                ss.str("");
-                ss.width( static_cast<long>(col_sizes[ c ]) );
-                ops[ c ]->to_stream( cols[ c ]->at( r ), ss );
-                ss.width(0);
-                os << ss.str();
-            }
-            os << "\n";
-        }
-    }
-    return os;
-}
+);
 
 }
