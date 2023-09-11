@@ -3,6 +3,10 @@
 namespace rac
 {
 
+RA_CPP_LIBRARY_EXPORT struct IStorage;
+
+RA_CPP_LIBRARY_EXPORT struct IValue;
+
 // NOLINTBEGIN(readability-identifier-length)
 
 std::ostream& cols_to_stream(

@@ -302,7 +302,7 @@ constexpr auto operator<=>( const value_iterator& a, const value_iterator& b )
 // tempting to split out interfaces into pure and mutable, but all
 // implementations will implement both, so we can just stick
 // with const methods and use IStorage/const IStorage as appropriate
-struct IStorage
+RA_CPP_LIBRARY_EXPORT struct IStorage
 {
     typedef const_value_iterator    const_iterator;
     typedef value_iterator          iterator;
@@ -343,7 +343,7 @@ struct IStorage
                         ,iterator  to
                         ) = 0;
 
-    virtual ~IStorage() {}
+    virtual ~IStorage() = default;
 };
 
 // We use one monotonic_buffer_resource per column
@@ -491,7 +491,7 @@ struct column_storage : public column_storage_base< T >
     {
     }
 
-    virtual ~column_storage() {}
+    virtual ~column_storage() = default;
 };
 
 
@@ -506,7 +506,7 @@ struct untyped_column_storage : public IStorage
     {
     }
 
-    virtual ~untyped_column_storage() {}
+    virtual ~untyped_column_storage() = default;
 
 private:
 
@@ -693,7 +693,7 @@ struct value_ops<double> : public value_ops_base<double>
 // IValue - Dynamically/monotyped value operations
 // Arguably could be merged with IStorage, though later we will have
 // comparison operations, etc...
-struct IValue
+RA_CPP_LIBRARY_EXPORT struct IValue
 {
     virtual constexpr type_t type() const noexcept = 0;
 
@@ -719,7 +719,7 @@ struct IValue
     ) const = 0;
 
 protected:
-    ~IValue() {}
+    virtual ~IValue() = default;
 };
 
 
@@ -871,7 +871,7 @@ public:
         return &ops;
     }
 
-    virtual ~untyped_value_ops() {}
+    virtual ~untyped_value_ops() = default;
 };
 
 // FIXME:
