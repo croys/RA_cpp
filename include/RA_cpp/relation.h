@@ -304,7 +304,7 @@ struct col_slice_t
 
 
 
-struct IRelationBase
+RA_CPP_LIBRARY_EXPORT struct IRelationBase
 {
     // FIXME: add Relation type to type_t?
     // Note: Tutorial D calls this the "header"
@@ -322,7 +322,7 @@ struct IRelationBase
     // combine with rel_ty/col_tys_t?
     virtual const std::vector<IValue*>&     value_ops() const noexcept = 0;
 
-    virtual ~IRelationBase() {}
+    virtual ~IRelationBase() = default;
 };
 
 
@@ -335,11 +335,11 @@ struct IRelationBase
 //  asking for slice returns std compatible [begin, end) for each
 //  or slice type has ForwardIterator/etc
 
-struct IRelation : IRelationBase
+RA_CPP_LIBRARY_EXPORT struct IRelation : IRelationBase
 {
     virtual const std::vector<col_tys_t>&   keys() const noexcept = 0;
 
-    virtual ~IRelation() {}
+    virtual ~IRelation() = default;
 };
 
 
@@ -352,58 +352,23 @@ struct IRelation : IRelationBase
 // - relation columns are unordered
 // - do we want to guarantee ordering of rows on first key?
 // - do keys belong in relation type, or just to relations?
-struct relation : IRelation
+RA_CPP_LIBRARY_EXPORT struct relation : IRelation
 {
     // IRelation
 
-    const col_tys_t& type() const noexcept override
-    {
-        return m_ty.m_tys;
-    }
-
-    size_t size() const noexcept override
-    {
-        return m_cols.size() > 0 ? m_cols[0]->size() : 0;
-    }
+    const col_tys_t&    type() const noexcept override;
+    size_t              size() const noexcept override;
 
     // FIXME: pmr?
-    const std::vector<col_tys_t>& keys() const noexcept override
-    {
-        return m_keys;
-    }
+    const std::vector<col_tys_t>& keys() const noexcept override;
 
-#ifdef _MSC_VER
-    #pragma warning(push)
-    #pragma warning(disable:4100)
-#else
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
 
-    const value_t* at( size_t row, size_t col ) const override
-    {
-        return this->m_cols[ col ]->at( row );
-    }
+    const value_t* at( size_t row, size_t col ) const override;
 
-    row_slice_t rowSlice( size_t start, size_t end ) const override
-    {
-        throw not_implemented();
-    }
-    col_slice_t colSlice( size_t col, size_t start, size_t end ) const override
-    {
-        throw not_implemented();
-    }
+    row_slice_t rowSlice( size_t start, size_t end ) const override;
+    col_slice_t colSlice( size_t col, size_t start, size_t end ) const override;
 
-    const std::vector<IValue*>&     value_ops() const noexcept override
-    {
-        return m_ops;
-    }
-
-#ifdef _MSC_VER
-    #pragma warning(pop)
-#else
-    #pragma GCC diagnostic pop
-#endif
+    const std::vector<IValue*>&     value_ops() const noexcept override;
 
     typedef std::shared_ptr<std::pmr::memory_resource> resource_ptr_t;
 
@@ -431,54 +396,11 @@ struct relation : IRelation
     explicit relation(
         relation_builder_resources&& res
         // FIXME: keys
-    ) : m_ty( res.m_col_tys )
-        {
-        const size_t n = res.m_col_tys.size();
-        if ( n == res.m_ops.size() ) {
-            m_ops.resize(n);
-        } else {
-            throw std::invalid_argument(
-                "size of ops doesn't match number of columns");
-        }
-        if ( n == res.m_resources.size() ) {
-            m_resources.resize(n);
-        } else {
-            throw std::invalid_argument(
-                "size of resources doesn't match number of columns");
-        }
-        if ( n == res.m_cols.size() ) {
-            m_cols.resize(n);
-        } else {
-            throw std::invalid_argument(
-                "size of cols doesn't match number of columns");
-        }
+    );
 
-        // re-arrange columns & take ownership
-        for (size_t i = 0; i < n; ++i)
-        {
-            auto it = std::find(
-                m_ty.m_tys.cbegin(), m_ty.m_tys.cend(), res.m_col_tys[i] );
-            if( it != m_ty.m_tys.end() )
-            {
-                size_t j = size_t(it - m_ty.m_tys.cbegin());
-                std::swap( m_ops[j],        res.m_ops[i]);
-                std::swap( m_resources[j],  res.m_resources[i]);
-                std::swap( m_cols[j],       res.m_cols[i]);
-            }
-        }
-    }
+    virtual ~relation() = default;
 
-    std::ostream& dump( std::ostream& os ) const
-    {
-        // dump type
-
-        os << "relation ";
-        col_tys_to_stream( os, m_ty.m_tys );
-        os << "\n\n";
-
-        return cols_to_stream( os, m_ty.m_tys, m_ops, m_cols );
-    }
-
+    std::ostream& dump( std::ostream& os ) const;
 
 
     rel_ty_t                            m_ty;
@@ -497,27 +419,24 @@ struct relation : IRelation
 // table_view - monotyped view onto a relation
 // In table_view columns and rows have ordering
 
-struct ITable : IRelationBase
+RA_CPP_LIBRARY_EXPORT struct ITable : IRelationBase
 {
-    virtual ~ITable() {}
+    virtual ~ITable() = default;
 };
 
 // FIXME: ITableM for dynamically typed updates
 
 // table_view for dynamically typed view onto an IRelation
 
-struct table_view : ITable
+RA_CPP_LIBRARY_EXPORT struct table_view : ITable
 {
-    // FIXME: own comparison function over multiple columns - later
-
+    // FIXME: custom comparison function over multiple columns - later
     // FIXME: vector of column name and ascending/descending
     explicit table_view(
          std::shared_ptr<IRelation>& rel
         ,std::ranges::forward_range auto col_names
     ) : m_rel( rel )
     {
-        // FIXME: build m_col_tys, m_ops
-
         // FIXME: do this with std::views
         m_col_map.reserve( col_names.size() );
         for( const auto cn : col_names ) {
@@ -542,8 +461,7 @@ struct table_view : ITable
         const size_t n = m_col_map.size();
         m_col_tys.reserve( n );
         m_ops.reserve( n );
-        for ( size_t i=0 ; i < m_col_map.size() ; ++i ) {
-            auto c = m_col_map[i];
+        for ( const auto c : m_col_map ) {
             m_col_tys.emplace_back( m_rel->type()[ c ] );
             m_ops.emplace_back( m_rel->value_ops()[ c ] );
         }
@@ -555,54 +473,32 @@ struct table_view : ITable
         // sort through the mapping
         auto row_cmp = [&]( size_t a, size_t b )
         {
-            for (size_t i=0; i<m_col_map.size(); ++i)
-            {
-                auto c = m_col_map[ i ];
+            for ( const auto c : m_col_map ) {
                 auto cmp = m_rel->value_ops()[ c ]->cmp(
-                         m_rel->at(a, c)
-                        ,m_rel->at(b, c)
+                            m_rel->at( a, c )
+                            ,m_rel->at( b, c )
                 );
 
-                if (cmp == std::strong_ordering::less)      return true;
-                if (cmp == std::strong_ordering::greater)   return false;
+                if (cmp == std::strong_ordering::less)      { return true; }
+                if (cmp == std::strong_ordering::greater)   { return false; }
             }
             return false;
         };
         std::sort( m_row_map.begin(), m_row_map.end(), row_cmp );
     }
 
+    virtual ~table_view() = default;
+
     // ITable interface
 
-    const col_tys_t&    type() const noexcept override
-    {
-        return m_col_tys;
-    }
-    size_t              size() const noexcept override
-    {
-        return m_col_tys.size();
-    }
-    const value_t*      at( size_t row, size_t col ) const override
-    {
-        // FIXME: bounds check
-        return m_rel->at( this->m_row_map[ row ], this->m_col_map[ col ] );
-    }
+    const col_tys_t&    type() const noexcept override;
+    size_t              size() const noexcept override;
+    const value_t*      at( size_t row, size_t col ) const override;
+    const std::vector<IValue*>& value_ops() const noexcept override;
 
-    const std::vector<IValue*>& value_ops() const noexcept override
-    {
-        return m_ops;
-    }
+    row_slice_t rowSlice( size_t start, size_t end ) const override;
+    col_slice_t colSlice( size_t col, size_t start, size_t end ) const override;
 
-    virtual row_slice_t rowSlice( size_t start, size_t end ) const override
-    {
-        throw not_implemented();
-    }
-    virtual col_slice_t colSlice( size_t col, size_t start, size_t end )
-        const override
-    {
-        throw not_implemented();
-    }
-
-    virtual ~table_view() {}
 
 private:
     std::vector<size_t>         m_col_map;  // column map
